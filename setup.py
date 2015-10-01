@@ -40,7 +40,7 @@ setup(
     install_requires=requirements,
     include_package_data=True,
     zip_safe=False,
-    description=""Infrastructure Performance Evaluation Toolkit"",
+    description="Infrastructure Performance Evaluation Toolkit",
     long_description=readme + '\n\n' + changelog,
     keywords='evalys',
     license='BSD',

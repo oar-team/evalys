@@ -17,4 +17,12 @@ Evalys
 Features
 --------
 
-* TODO
+* Load JobSet from Batsim jobs file
+* Simple gantt visualisation
+
+
+Examples
+--------
+
+   cd examples
+   ipython --matplotlib qt -i example1.py
