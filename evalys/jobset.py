@@ -1,5 +1,7 @@
 from __future__ import unicode_literals, print_function
 import pandas as pd
+from evalys.visu import plot_gantt
+
 
 def ids2itvs(ids):
     """Convert list of int to list of intervals"""
@@ -18,11 +20,10 @@ def ids2itvs(ids):
 
 
 class JobSet(object):
-    res_set = {}
-    nb_max_res = 0
-
     def __init__(self, filename):
         # self.load_cvs(filename)
+        self.res_set = {}
+        self.nb_max_res = 0
         self.df = pd.read_csv(filename)
         for i, row in self.df.iterrows():
             res_str = row['allocated_processors'].split(' ')
@@ -30,3 +31,6 @@ class JobSet(object):
             if res[-1] > self.nb_max_res:
                 self.nb_max_res = res[-1]
             self.res_set[row['jobID']] = ids2itvs(res)
+
+    def gantt(self):
+        plot_gantt(self)
