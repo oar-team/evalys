@@ -25,7 +25,7 @@ def annotate(ax, rect, annot):
     cy = ry + rect.get_height() / 2.0
 
     ax.annotate(annot, (cx, cy), color='black',
-                fontsize='normal', ha='center', va='center')
+                fontsize='small', ha='center', va='center')
 
 
 def plot_gantt(jobset):
