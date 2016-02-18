@@ -27,10 +27,22 @@ class JobSet(object):
         self.df = pd.read_csv(filename)
         for i, row in self.df.iterrows():
             res_str = row['allocated_processors'].split(' ')
-            res = sorted([int(x) for x in res_str])
-            if res[-1] > self.nb_max_res:
-                self.nb_max_res = res[-1]
-            self.res_set[row['jobID']] = ids2itvs(res)
+            if '-' in (' ').join(res_str):
+                intervals = []
+                # it is already intervals so get it directly
+                for inter in res_str:
+                    try:
+                        (begin, first) = inter.split('-')
+                        intervals.append((int(begin), int(first)))
+                    except ValueError:
+                        intervals.append((int(inter), int(inter)))
+                self.res_set[row['jobID']] = intervals
+
+            else:
+                res = sorted([int(x) for x in res_str])
+                if res[-1] > self.nb_max_res:
+                    self.nb_max_res = res[-1]
+                self.res_set[row['jobID']] = ids2itvs(res)
 
     def gantt(self):
         plot_gantt(self)

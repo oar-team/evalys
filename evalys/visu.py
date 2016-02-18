@@ -1,16 +1,13 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
 
-import pandas as pd
-# import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatch
 
 import colorsys
 
-#matplotlib.style.use('ggplot')
-pd.set_option('display.mpl_style', 'default')  # Make the graphs a bit prettier
+matplotlib.style.use('ggplot')
 
 matplotlib.rcParams['figure.figsize'] = (12.0, 8.0)
 
@@ -25,7 +22,7 @@ def annotate(ax, rect, annot):
     cy = ry + rect.get_height() / 2.0
 
     ax.annotate(annot, (cx, cy), color='black',
-                fontsize=12, ha='center', va='center')
+                fontsize='small', ha='center', va='center')
 
 
 def plot_gantt(jobset):

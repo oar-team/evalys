@@ -4,5 +4,5 @@ from evalys.jobset import JobSet
 js = JobSet('jobs.csv')
 print(js.df.describe())
 
-js.df.hist()
+#js.df.hist()
 js.gantt()

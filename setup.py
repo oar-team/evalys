@@ -18,7 +18,8 @@ readme = read('README.rst')
 changelog = read('CHANGES.rst').replace('.. :changelog:', '')
 
 requirements = [
-    # TODO: put package requirements here
+    'pandas',
+    'matplotlib',
 ]
 
 version = ''
