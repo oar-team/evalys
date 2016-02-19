@@ -52,4 +52,9 @@ setup(
         'Programming Language :: Python :: 3',
         'Topic :: System :: Clustering',
     ],
+    entry_points={
+        'console_scripts': [
+            'evalys=evalys.evalys:main',
+        ],
+    }
 )

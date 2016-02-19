@@ -23,8 +23,9 @@ class JobSet(object):
     def __init__(self, filename):
         # self.load_cvs(filename)
         self.res_set = {}
-        self.nb_max_res = 0
         self.df = pd.read_csv(filename)
+
+        # compute resources intervals
         for i, row in self.df.iterrows():
             res_str = row['allocated_processors'].split(' ')
             if '-' in (' ').join(res_str):
@@ -40,9 +41,12 @@ class JobSet(object):
 
             else:
                 res = sorted([int(x) for x in res_str])
-                if res[-1] > self.nb_max_res:
-                    self.nb_max_res = res[-1]
                 self.res_set[row['jobID']] = ids2itvs(res)
+        # compute resources bounds (+1 for max because of visu alignment
+        # over the job number line
+        self.res_bounds = (
+            min([b for x in self.res_set.values() for (b, e) in x]),
+            max([e for x in self.res_set.values() for (b, e) in x]) + 1)
 
-    def gantt(self):
-        plot_gantt(self)
+    def gantt(self, ax, title):
+        plot_gantt(self, ax, title)
