@@ -1,3 +1,4 @@
+# coding: utf-8
 from __future__ import unicode_literals, print_function
 import pandas as pd
 from evalys.visu import plot_gantt

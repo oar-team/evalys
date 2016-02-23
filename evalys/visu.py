@@ -3,10 +3,11 @@ from __future__ import unicode_literals, print_function
 
 import matplotlib
 import matplotlib.patches as mpatch
+from matplotlib import pyplot as plt
 
 import colorsys
 
-matplotlib.style.use('ggplot')
+plt.style.use('ggplot')
 
 matplotlib.rcParams['figure.figsize'] = (12.0, 8.0)
 
