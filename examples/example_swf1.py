@@ -3,6 +3,7 @@ import matplotlib
 from evalys.workload import Workload
 
 # matplotlib.use('WX')
+# %matplotlib
 
 wkd = Workload(file='UniLu-Gaia-2014-2.swf')
 df = wkd.df 

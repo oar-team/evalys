@@ -2,6 +2,7 @@
 from __future__ import unicode_literals, print_function
 import pandas as pd
 import re
+import datetime
 
 
 class Workload(object):
@@ -39,6 +40,7 @@ class Workload(object):
 
             self.df = pd.read_csv(kwargs['file'], comment=';', names=columns, header=0, delim_whitespace=True)
 
+            self.nb_jobs = len(self.df)
             # process header
             header_file = open(kwargs['file'], 'r')
             self.header = ''
@@ -50,6 +52,8 @@ class Workload(object):
                     m = re.search(".*UnixStartTime:\s(\d+)", line)
                     if m:
                         self.unix_start_time = int(m.group(1))
+                        self.str_start_time = datetime.datetime.fromtimestamp(
+                            self.unix_start_time).strftime('%Y-%m-%d %H:%M:%S')
 
                     m = re.search(".*MaxNodes:\s(\d+)", line)
                     if m:
@@ -67,9 +71,56 @@ class Workload(object):
                     # header is finished
                     break
 
-    def swf_log_describe(self):
-        ''' will '''
+    def gene_arriving_each_day(self):
+        df = self.df
+        df['day'] = df.apply(lambda x: datetime.datetime.fromtimestamp(
+            self.unix_start_time+x['submit']).strftime('%u'), axis=1)
+        days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+        grouped = df.groupby('day')
+        df1 = grouped['job'].agg({'jobs': lambda x: float(x.count())/self.nb_jobs})
+        nb_procs = df['proc_req'].sum()
+        df2 = grouped['proc_req'].agg({'procs': lambda x: float(x.sum())/nb_procs})
+
+        df1['procs'] = df2['procs']
+        df1.index = days
+        self.arriving_each_day = df1
+
+    def gene_arriving_each_hour(self):
+        df = self.df
+        df['hour'] = df.apply(lambda x: datetime.datetime.fromtimestamp(
+            self.unix_start_time+x['submit']).strftime('%H'), axis=1)
+
+        grouped = df.groupby('hour')
+        df1 = grouped['job'].agg({'jobs': lambda x: float(x.count())/self.nb_jobs})
+        nb_procs = df['proc_req'].sum()
+        df2 = grouped['proc_req'].agg({'procs': lambda x: float(x.sum())/nb_procs})
+
+        df1['procs'] = df2['procs']
+        self.arriving_each_hour = df1
+
+    def gene_jobs_procs_per_week_per_user(self):
+        df = self.df
+        df['week'] = df.apply(lambda x: datetime.datetime.fromtimestamp(
+            self.unix_start_time+x['submit']).strftime('%W'), axis=1)
+        grouped = df.groupby(['week', 'user'])
+
+        jobs_per_user = grouped['job'].count()
+        procs_per_user = grouped['proc_req'].sum()
+
+        df_agg = grouped['job'].agg({'count':'count'})
+        g = df_agg['count'].groupby(level=0, group_keys=False)
+
+        # largest user contributor
+        a = self.df.groupby('uid')
+        a['job'].count().nlargest(8)
+
+    def gene_procs_per_week_per_user():
         pass
 
-    def plot_arriving_each_day_by_week(self):
-        pass
+    def generate_swf_log_dfs(self):
+        '''Generate dataframes usable to plot swf log graphs'''
+        print("Generate arriving_each_day dataframe")
+        self.gene_arriving_each_day()
+        print("Generate arriving_each_hour dataframe")
+        self.gene_arriving_each_hour()
