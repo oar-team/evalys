@@ -1,5 +1,6 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
+from collections import OrderedDict
 import pandas as pd
 import re
 import datetime
@@ -99,23 +100,35 @@ class Workload(object):
         df1['procs'] = df2['procs']
         self.arriving_each_hour = df1
 
-    def gene_jobs_procs_per_week_per_user(self):
+    def gene_jobs_per_week_per_user(self, nb=6):
         df = self.df
         df['week'] = df.apply(lambda x: datetime.datetime.fromtimestamp(
             self.unix_start_time+x['submit']).strftime('%W'), axis=1)
-        grouped = df.groupby(['week', 'user'])
+        grouped = df.groupby(['week', 'uid'])
 
-        jobs_per_user = grouped['job'].count()
-        procs_per_user = grouped['proc_req'].sum()
+        da = grouped['job'].agg({'count': 'count'})
+        nb_weeks = len(da.index.levels[0])
 
-        df_agg = grouped['job'].agg({'count':'count'})
-        g = df_agg['count'].groupby(level=0, group_keys=False)
+        # identify nb largest contributors (uid), 0 uid is for others)
+        job_nlargest_uid = list(df.groupby('uid')['job'].count().nlargest(nb).index)
+        job_nlargest_uid_0 = [0] + job_nlargest_uid[::-1]  # [ 0, reversed list ]
 
-        # largest user contributor
-        a = self.df.groupby('uid')
-        a['job'].count().nlargest(8)
+        # jobs_week_uid_dict = {i: [0]*nb_weeks for i in job_nlargest_uid_0}
+        jobs_week_uid_dict = OrderedDict((i, [0]*nb_weeks) for i in job_nlargest_uid_0)
+        idx = 0
+        for i, g in da.groupby(level=0):
+            df_j = g.xs(i, level='week')  # dataframe uid / nb_jobs(count)
+            for uid, row in df_j.iterrows():
+                if uid in job_nlargest_uid_0:
+                    print('uid:', uid)
+                    jobs_week_uid_dict[uid][idx] = row['count']
+                else:
+                    jobs_week_uid_dict[0][idx] += row['count']
+            idx += 1
 
-    def gene_procs_per_week_per_user():
+        self.jobs_per_week_per_users = pd.DataFrame(jobs_week_uid_dict)
+
+    def gene_procs_per_week_per_user(self):
         pass
 
     def generate_swf_log_dfs(self):
