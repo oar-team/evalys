@@ -131,6 +131,27 @@ class Workload(object):
     def gene_procs_per_week_per_user(self):
         pass
 
+    def gene_fraction_jobs_by_job_size(self):
+        grouped = self.df.groupby('proc_alloc')
+        self.fraction_jobs_by_job_size = grouped['job'].agg({'jobs': lambda x: float(x.count())/self.nb_jobs})
+        
+        # fig = plt.figure()
+        # ax = fig.add_subplot(2, 1, 1)
+        # ax.set_xscale('log', basex=2) need to bars' width
+        # http://stackoverflow.com/questions/27534350/set-constant-width-to-every-bar-in-a-bar-plot
+        # df1.plot(kind='bar', ax=ax)
+        # 
+    def gene_fraction_jobs_by_job_runtime(self):
+        # grouped = self.df.groupby('runtime')
+        # self.fraction_jobs_by_job_runtime = grouped['job']\
+        #    .agg({'jobs': lambda x: float(x.count())/self.nb_jobs})
+
+        # fig = plt.figure()
+        # ax = fig.add_subplot(2, 1, 1)
+        # ax.set_xscale('log'
+        # df.hist(bins=np.logspace(1, 4.5 , 100), column='runtime')
+        pass
+
     def generate_swf_log_dfs(self):
         '''Generate dataframes usable to plot swf log graphs'''
         print("Generate arriving_each_day dataframe")
