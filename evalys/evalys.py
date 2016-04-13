@@ -20,8 +20,12 @@ def main():
 
     fig, ax_list = plt.subplots(len(args.inputCSV), sharex=True,
                                 sharey=True)
-    if not isinstance(ax_list, list):
+    try:
+        iter(ax_list)
+    except:
         ax_list = [ax_list]
+    else:
+        ax_list = list(ax_list)
 
     jobsets = {}
     for ax, inputCSV in zip(ax_list, sorted(args.inputCSV)):
