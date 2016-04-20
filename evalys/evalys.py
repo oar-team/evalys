@@ -15,6 +15,8 @@ def main():
     parser = argparse.ArgumentParser(description='Generate Gantt charts '
                                      'from Batsim CSV job file.')
     parser.add_argument('inputCSV', nargs='+', help='The input CSV file(s)')
+    parser.add_argument('-o', '--output', nargs='?',
+                        help='The output Gantt chart file depending on the extension. For example: figure.svg')
 
     args = parser.parse_args()
 
@@ -33,7 +35,6 @@ def main():
         js.gantt(ax, os.path.basename(inputCSV))
         jobsets[inputCSV] = js
 
-    #import ipdb; ipdb.set_trace()
     # ax.set_xlim((min({m.df.submission_time.min() for m in
     #                   jobsets.values()}),
     #              max({m.df.finish_time.max() for m in jobsets.values()})))
@@ -42,7 +43,10 @@ def main():
     #                 max([(x, y) = js.res_bounds for js in jobsets.values()],
     #                     key=lambda y: (x, y))))
 
-    plt.show()
+    if args.output is not None:
+        plt.savefig(args.output)
+    else:
+        plt.show()
 
 if __name__ == "__main__":
     main()
