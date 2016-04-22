@@ -7,9 +7,15 @@ module.
 
 import argparse
 import os
-import matplotlib.pyplot as plt
-from evalys.jobset import JobSet
+import matplotlib
 
+# Manage the case where the system as no display
+if not os.environ.get('DISPLAY'):
+    matplotlib.use('Agg')
+
+import matplotlib.pyplot as plt
+
+from evalys.jobset import JobSet
 
 def main():
     parser = argparse.ArgumentParser(description='Generate Gantt charts '
@@ -35,13 +41,11 @@ def main():
         js.gantt(ax, os.path.basename(inputCSV))
         jobsets[inputCSV] = js
 
-    # ax.set_xlim((min({m.df.submission_time.min() for m in
-    #                   jobsets.values()}),
-    #              max({m.df.finish_time.max() for m in jobsets.values()})))
-    # ax.set_ylim((min([js.res_bounds for js in jobsets.values()],
-    #                     key=lambda x: (x, y)),
-    #                 max([(x, y) = js.res_bounds for js in jobsets.values()],
-    #                     key=lambda y: (x, y))))
+    ax.set_xlim((min({m.df.submission_time.min() for m in
+                      jobsets.values()}),
+                 max({m.df.finish_time.max() for m in jobsets.values()})))
+    ax.set_ylim((min([js.res_bounds[0] for js in jobsets.values()]),
+                    max([js.res_bounds[1] for js in jobsets.values()])))
 
     if args.output is not None:
         plt.savefig(args.output)
