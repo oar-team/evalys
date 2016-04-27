@@ -46,11 +46,29 @@ def main():
         js.gantt(ax, os.path.basename(inputCSV))
         jobsets[inputCSV] = js
 
-    ax.set_xlim((min({m.df.submission_time.min() for m in
-                      jobsets.values()}),
-                 max({m.df.finish_time.max() for m in jobsets.values()})))
-    ax.set_ylim((min([js.res_bounds[0] for js in jobsets.values()]),
-                    max([js.res_bounds[1] for js in jobsets.values()])))
+    x_axes_min_value = min({m.df.submission_time.min()
+                            for m in jobsets.values()})
+    x_axes_max_value = max({m.df.finish_time.max() for m in jobsets.values()})
+    y_axes_min_value = min([js.res_bounds[0] for js in jobsets.values()])
+    y_axes_max_value = max([js.res_bounds[1] for js in jobsets.values()])
+    x_size = x_axes_max_value - x_axes_min_value
+    y_size = y_axes_max_value - y_axes_min_value
+
+    print("x = ({},{})".format(x_axes_min_value, x_axes_max_value))
+    print("y = ({},{})".format(y_axes_min_value, y_axes_max_value))
+    print("x size = {}".format(x_size))
+    print("y size = {}".format(y_size))
+
+    for ax in ax_list:
+        ax.set_xlim((x_axes_min_value, x_axes_max_value))
+        ax.set_ylim((y_axes_min_value, y_axes_max_value))
+
+    # Cosmetic changes
+    # plt.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+    fig.set_tight_layout(True)
+    fig.set_size_inches(x_size / 3600 / 2,
+                        y_size * len(ax_list) * 0.15,
+                        forward=True)
 
     if args.output is not None:
         plt.savefig(args.output)
