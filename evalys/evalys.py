@@ -24,7 +24,7 @@ def main():
                                      'from Batsim CSV job file.')
     parser.add_argument('inputCSV', nargs='+', help='The input CSV file(s)')
     parser.add_argument('-o', '--output', nargs='?',
-                        help='The output Gantt chart file depending on the extension. For example: figure.svg')
+                        help='The output Gantt chart file depending on the extension (PDF format is RECOMMENDED). For example: figure.pdf')
 
     args = parser.parse_args()
     if NO_GRAPHICS and not args.output:
@@ -66,8 +66,9 @@ def main():
     # Cosmetic changes
     # plt.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
     fig.set_tight_layout(True)
-    fig.set_size_inches(x_size / 3600 / 2,
-                        y_size * len(ax_list) * 0.15,
+    y_inches = y_size * len(ax_list) * 0.15
+    fig.set_size_inches(y_inches * 1.5,
+                        y_inches,
                         forward=True)
 
     if args.output is not None:
