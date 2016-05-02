@@ -21,6 +21,14 @@ from evalys.jobset import JobSet
 from evalys.visu import plot_gantt_general_shape
 
 
+def unique_file_name(file_dict, file_name, index=1):
+    ''' check dict and return  a unique identifier for a file'''
+    if file_dict.get(file_name) is None:
+        return file_name
+    file_name = file_name.replace(str(index - 1), "")
+    return unique_file_name(file_dict, file_name + str(index), index=index + 1)
+
+
 def main():
     parser = argparse.ArgumentParser(description='Generate Gantt charts '
                                      'from Batsim CSV job file.')
@@ -60,8 +68,10 @@ def main():
     jobsets = {}
     for ax, inputCSV in zip(ax_list, sorted(args.inputCSV)):
         js = JobSet(inputCSV)
-        js.gantt(ax, os.path.basename(inputCSV))
-        jobsets[inputCSV] = js
+        file_name = os.path.basename(inputCSV)
+        file_name = unique_file_name(jobsets, file_name)
+        jobsets[file_name] = js
+        js.gantt(ax, file_name)
 
     if args.draw_shape:
         plot_gantt_general_shape(jobsets, ax_shape)
