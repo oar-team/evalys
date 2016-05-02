@@ -17,6 +17,7 @@ if not os.environ.get('DISPLAY'):
 
 import matplotlib.pyplot as plt
 from evalys.jobset import JobSet
+from evalys.visu import plot_gantt_general_shape
 
 
 def main():
@@ -25,14 +26,28 @@ def main():
     parser.add_argument('inputCSV', nargs='+', help='The input CSV file(s)')
     parser.add_argument('-o', '--output', nargs='?',
                         help='The output Gantt chart file depending on the extension (PDF format is RECOMMENDED). For example: figure.pdf')
+    parser.add_argument('-s', '--draw_shape',
+                        dest='draw_shape',
+                        action='store_true',
+                        default=False,
+                        help='Generate a general shape gantt comparison between inputs')
 
     args = parser.parse_args()
     if NO_GRAPHICS and not args.output:
         print("No available display: please provide an output using the -o,--output option")
         exit(1)
 
-    fig, ax_list = plt.subplots(len(args.inputCSV), sharex=True,
+    # generate subplot
+    if args.draw_shape:
+        fig, ax_list = plt.subplots(len(args.inputCSV) + 1, sharex=True,
+                                    sharey=True)
+        ax_shape = ax_list[-1:][0]
+        ax_list = ax_list[:-1]
+    else:
+        fig, ax_list = plt.subplots(len(args.inputCSV), sharex=True,
                                 sharey=True)
+
+    # manage unique ax probleme
     try:
         iter(ax_list)
     except:
@@ -40,12 +55,17 @@ def main():
     else:
         ax_list = list(ax_list)
 
+    # generate gantt chart from CSV inputs
     jobsets = {}
     for ax, inputCSV in zip(ax_list, sorted(args.inputCSV)):
         js = JobSet(inputCSV)
         js.gantt(ax, os.path.basename(inputCSV))
         jobsets[inputCSV] = js
 
+    if args.draw_shape:
+        plot_gantt_general_shape(jobsets, ax_shape)
+
+    # set axes and resources
     x_axes_min_value = min({m.df.submission_time.min()
                             for m in jobsets.values()})
     x_axes_max_value = max({m.df.finish_time.max() for m in jobsets.values()})

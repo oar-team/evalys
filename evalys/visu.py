@@ -40,3 +40,25 @@ def plot_gantt(jobset, ax, title):
     ax.set_ylim(jobset.res_bounds)
     ax.grid(True)
     ax.set_title(title)
+
+
+def plot_gantt_general_shape(jobset_list, ax):
+    '''
+    Draw a general gantt shape of multiple jobsets on one plot for comparison
+    '''
+    color_index = 4
+    for jobset in jobset_list.values():
+        color = RGB_tuples[color_index % len(RGB_tuples)]
+        color_index += 7
+
+        for i, job in jobset.df.iterrows():
+            duration = job['execution_time']
+            for i, itv in enumerate(jobset.res_set[job['jobID']]):
+                (y0, y1) = itv
+                rect = mpatch.Rectangle((job['starting_time'], y0), duration,
+                                        y1 - y0 + 0.9, alpha=0.4,
+                                        color=color)
+                ax.add_artist(rect)
+
+    ax.set_xlim((jobset.df.submission_time.min(), jobset.df.finish_time.max()))
+    ax.set_ylim(jobset.res_bounds)
