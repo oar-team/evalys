@@ -16,6 +16,7 @@ if not os.environ.get('DISPLAY'):
     matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatch
 from evalys.jobset import JobSet
 from evalys.visu import plot_gantt_general_shape
 

@@ -47,9 +47,17 @@ def plot_gantt_general_shape(jobset_list, ax):
     Draw a general gantt shape of multiple jobsets on one plot for comparison
     '''
     color_index = 4
-    for jobset in jobset_list.values():
+    legend_rect = []
+    legend_label = []
+    for jobset_name, jobset in jobset_list.items():
+        # generate color
         color = RGB_tuples[color_index % len(RGB_tuples)]
         color_index += 7
+
+        # generate legend
+        legend_rect.append(
+            mpatch.Rectangle((0, 1), 12, 10, alpha=0.4, color=color))
+        legend_label.append(jobset_name)
 
         for i, job in jobset.df.iterrows():
             duration = job['execution_time']
@@ -60,5 +68,7 @@ def plot_gantt_general_shape(jobset_list, ax):
                                         color=color)
                 ax.add_artist(rect)
 
-    ax.set_xlim((jobset.df.submission_time.min(), jobset.df.finish_time.max()))
-    ax.set_ylim(jobset.res_bounds)
+    # do include legend
+    ax.legend(legend_rect, legend_label, loc='center',
+              bbox_to_anchor=(0.5, 1.05),
+              fancybox=True, shadow=True, ncol=5)
