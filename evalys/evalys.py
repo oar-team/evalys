@@ -86,10 +86,10 @@ def main():
     # Cosmetic changes
     # plt.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
     fig.set_tight_layout(True)
-    y_inches = y_size * len(ax_list) * 0.15
+    y_inches = max(y_size * len(ax_list) * 0.15, 8)
     if args.draw_shape:
         y_inches += y_size * 0.15
-    fig.set_size_inches(y_inches * 1.5,
+    fig.set_size_inches(y_inches * 1.7,
                         y_inches,
                         forward=True)
 
