@@ -11,9 +11,10 @@ plt.style.use('ggplot')
 
 matplotlib.rcParams['figure.figsize'] = (12.0, 8.0)
 
-NB_COLORS = 16
-HSV_tuples = [(x * 1.0 / NB_COLORS, 1, 0.7) for x in range(NB_COLORS)]
-RGB_tuples = list(map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples))
+
+def generate_color_set(nb_colors):
+    HSV_tuples = [(x * 1.0 / nb_colors, 1, 0.7) for x in range(nb_colors)]
+    return list(map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples))
 
 
 def annotate(ax, rect, annot):
@@ -27,6 +28,7 @@ def annotate(ax, rect, annot):
 
 def plot_gantt(jobset, ax, title):
     for i, job in jobset.df.iterrows():
+        RGB_tuples = generate_color_set(16)
         col = RGB_tuples[job.jobID % len(RGB_tuples)]
         duration = job['execution_time']
         for i, itv in enumerate(jobset.res_set[job['jobID']]):
@@ -46,13 +48,14 @@ def plot_gantt_general_shape(jobset_list, ax):
     '''
     Draw a general gantt shape of multiple jobsets on one plot for comparison
     '''
-    color_index = 4
+    color_index = 0
+    RGB_tuples = generate_color_set(len(jobset_list))
     legend_rect = []
     legend_label = []
     for jobset_name, jobset in jobset_list.items():
         # generate color
         color = RGB_tuples[color_index % len(RGB_tuples)]
-        color_index += 7
+        color_index += 1
 
         # generate legend
         legend_rect.append(
@@ -70,5 +73,5 @@ def plot_gantt_general_shape(jobset_list, ax):
 
     # do include legend
     ax.legend(legend_rect, legend_label, loc='center',
-              bbox_to_anchor=(0.5, 1.05),
+              bbox_to_anchor=(0.5, 1.06),
               fancybox=True, shadow=True, ncol=5)
