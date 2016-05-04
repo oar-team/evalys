@@ -59,7 +59,7 @@ def plot_gantt_general_shape(jobset_list, ax):
 
         # generate legend
         legend_rect.append(
-            mpatch.Rectangle((0, 1), 12, 10, alpha=0.4, color=color))
+            mpatch.Rectangle((0, 1), 12, 10, alpha=0.2, color=color))
         legend_label.append(jobset_name)
 
         for i, job in jobset.df.iterrows():
@@ -67,7 +67,7 @@ def plot_gantt_general_shape(jobset_list, ax):
             for i, itv in enumerate(jobset.res_set[job['jobID']]):
                 (y0, y1) = itv
                 rect = mpatch.Rectangle((job['starting_time'], y0), duration,
-                                        y1 - y0 + 0.9, alpha=0.4,
+                                        y1 - y0 + 0.9, alpha=0.2,
                                         color=color)
                 ax.add_artist(rect)
 
