@@ -4,12 +4,15 @@ from __future__ import unicode_literals, print_function
 import matplotlib
 import matplotlib.patches as mpatch
 from matplotlib import pyplot as plt
+import pandas as pd
 
 import colorsys
 
 plt.style.use('ggplot')
 
 matplotlib.rcParams['figure.figsize'] = (12.0, 8.0)
+
+available_series = ['bonded_slowdown', 'waiting_time', 'all']
 
 
 def generate_color_set(nb_colors):
@@ -42,6 +45,49 @@ def plot_gantt(jobset, ax, title):
     ax.set_ylim(jobset.res_bounds)
     ax.grid(True)
     ax.set_title(title)
+
+
+def plot_series(series_type, jobsets, ax_series):
+    '''
+    Plot one or several time series about provided jobsets on the given ax
+    series_type can be any value present in available_series.
+    '''
+    if series_type not in available_series:
+        raise AttributeError("The gieven attribute should be one of the folowing: {}".format(available_series))
+
+    if series_type == "bonded_slowdown":
+        pass
+    elif series_type == "waiting_time":
+        series = {}
+        indexes = {}
+        series_data = {}
+        # calculate series for each jobset
+        for jobset_name in jobsets.keys():
+            indexes[jobset_name] = []
+            series_data[jobset_name] = []
+            jobset = jobsets[jobset_name]
+
+            df_sorted_by_finished_time = jobset.df.sort_values(by='finish_time')
+            for index in range(1, len(df_sorted_by_finished_time)):
+                df_cut = df_sorted_by_finished_time[:index]
+                # store index
+                event_time = df_cut.finish_time[-1:].values[0]
+                indexes[jobset_name].append(event_time)
+                # store summed waiting_time
+                waiting_time_sum = df_cut.waiting_time.sum()
+                series_data[jobset_name].append(waiting_time_sum)
+            #  create a serie
+            series[jobset_name] = pd.Series(data=series_data[jobset_name],
+                                            index=indexes[jobset_name])
+        # plot series
+        for serie_name, serie in series.items():
+            ax_series.plot(serie)
+        ax_series.set_title(series_type)
+
+    elif series_type == "all":
+        pass
+    else:
+        raise RuntimeError('The serie \"{}\" is not implemeted yet')
 
 
 def plot_gantt_general_shape(jobset_list, ax):
