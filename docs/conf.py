@@ -60,7 +60,7 @@ copyright = u'2015, Olivier Richard'
 # the built documents.
 #
 version_file = os.path.join(HERE, os.pardir,
-                            'oar_tv', '__init__.py')
+                            'evalys', '__init__.py')
 
 release = re.search("__version__ = '([^']+)'",
                     open(version_file).read().strip()).group(1)
