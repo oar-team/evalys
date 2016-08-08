@@ -19,6 +19,59 @@ def ids2itvs(ids):
 
     return itvs
 
+def string_to_interval_set(s):
+    """Transforms a string like "1 2 3 7-9 13" into interval sets like
+       [(1,3), (7,9), (13,13)]"""
+    intervals = []
+    res_str = s.split(' ')
+    if '-' in (' ').join(res_str):
+        # it is already intervals so get it directly
+        for inter in res_str:
+            try:
+                (begin, end) = inter.split('-')
+                intervals.append((int(begin), int(end)))
+            except ValueError:
+                intervals.append((int(inter), int(inter)))
+    else:
+        res = sorted([int(x) for x in res_str])
+        intervals = ids2itvs(res)
+
+    return intervals
+
+def interval_set_to_set(intervals):
+    s = set()
+
+    for (begin, end) in intervals:
+        for x in range(begin, end+1):
+            s.add(x)
+
+    return s
+
+def set_to_interval_set(s):
+    intervals = []
+    l = list(s)
+    l.sort()
+
+    if len(l) > 0:
+        i = 0
+        current_interval = [l[i], l[i]]
+        i+=1
+
+        while i < len(l):
+            if l[i] == current_interval[1] + 1:
+                current_interval[1] = l[i]
+            else:
+                intervals.append(current_interval)
+                current_interval = [l[i], l[i]]
+            i+=1
+
+        if current_interval not in intervals:
+            intervals.append(tuple(current_interval))
+
+    return intervals
+
+def interval_set_to_string(intervals):
+    return ' '.join(['{}-{}'.format(begin, end) for (begin,end) in intervals])
 
 class JobSet(object):
     def __init__(self, filename):
@@ -28,21 +81,9 @@ class JobSet(object):
 
         # compute resources intervals
         for i, row in self.df.iterrows():
-            res_str = row['allocated_processors'].split(' ')
-            if '-' in (' ').join(res_str):
-                intervals = []
-                # it is already intervals so get it directly
-                for inter in res_str:
-                    try:
-                        (begin, first) = inter.split('-')
-                        intervals.append((int(begin), int(first)))
-                    except ValueError:
-                        intervals.append((int(inter), int(inter)))
-                self.res_set[row['jobID']] = intervals
+            raw_res_str = row['allocated_processors']
+            self.res_set[row['jobID']] = string_to_interval_set(raw_res_str)
 
-            else:
-                res = sorted([int(x) for x in res_str])
-                self.res_set[row['jobID']] = ids2itvs(res)
         # compute resources bounds (+1 for max because of visu alignment
         # over the job number line
         self.res_bounds = (

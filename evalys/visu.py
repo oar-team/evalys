@@ -29,16 +29,17 @@ def annotate(ax, rect, annot):
                 fontsize='small', ha='center', va='center')
 
 
-def plot_gantt(jobset, ax, title):
-    for i, job in jobset.df.iterrows():
+def plot_gantt(jobset, ax, title, labels=True):
+    for _, job in jobset.df.iterrows():
         RGB_tuples = generate_color_set(16)
         col = RGB_tuples[job.jobID % len(RGB_tuples)]
         duration = job['execution_time']
-        for i, itv in enumerate(jobset.res_set[job['jobID']]):
+        for itv in jobset.res_set[job['jobID']]:
             (y0, y1) = itv
             rect = mpatch.Rectangle((job['starting_time'], y0), duration,
                                     y1 - y0 + 0.9, alpha=0.2, color=col)
-            annotate(ax, rect, str(job['jobID']))
+            if labels:
+                annotate(ax, rect, str(job['jobID']))
             ax.add_artist(rect)
 
     ax.set_xlim((jobset.df.submission_time.min(), jobset.df.finish_time.max()))
@@ -46,6 +47,32 @@ def plot_gantt(jobset, ax, title):
     ax.grid(True)
     ax.set_title(title)
 
+def plot_pstates(pstates, x_horizon, ax, off_pstates=[]):
+    for _, job in pstates.pseudo_jobs.iterrows():
+        if job['pstate'] in off_pstates:
+            interval_list = pstates.intervals[job['interval_id']]
+            for machine_interval in interval_list:
+                (y0, y1) = machine_interval
+                (b, e) = (job['begin'], min(job['end'], x_horizon))
+                rect = mpatch.Rectangle((b,y0), e - b, y1 - y0 + 0.9,
+                                        color=(0,0,0))
+                ax.add_artist(rect)
+
+def plot_gantt_pstates(jobset, pstates, ax, title,
+                       labels=True, off_pstates=[]):
+
+    plot_gantt(jobset, ax, title, labels)
+
+    fpb = pstates.pseudo_jobs.loc[pstates.pseudo_jobs['end'] < float('inf')]
+
+    ax.set_xlim(min(jobset.df.submission_time.min(), fpb.begin.min()),
+                max(jobset.df.finish_time.max(), fpb.end.max()))
+    ax.set_ylim(min(jobset.res_bounds[0], pstates.res_bounds[0]),
+                max(jobset.res_bounds[1], pstates.res_bounds[1]))
+    ax.grid(True)
+    ax.set_title(title)
+
+    plot_pstates(pstates, ax.get_xlim()[1], ax, off_pstates)
 
 def plot_series(series_type, jobsets, ax_series):
     '''
