@@ -21,10 +21,9 @@ def ids2itvs(ids):
 
 
 class JobSet(object):
-    def __init__(self, filename):
-        # self.load_cvs(filename)
+    def __init__(self, df):
         self.res_set = {}
-        self.df = pd.read_csv(filename)
+        self.df = df
 
         # compute resources intervals
         for i, row in self.df.iterrows():
@@ -48,6 +47,11 @@ class JobSet(object):
         self.res_bounds = (
             min([b for x in self.res_set.values() for (b, e) in x]),
             max([e for x in self.res_set.values() for (b, e) in x]) + 1)
+
+    @classmethod
+    def from_csv(cls, filename):
+        df = pd.read_csv(filename)
+        return cls(df)
 
     def gantt(self, ax, title):
         plot_gantt(self, ax, title)

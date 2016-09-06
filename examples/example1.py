@@ -4,7 +4,7 @@ from evalys.jobset import JobSet
 
 #matplotlib.use('WX')
 
-js = JobSet('jobs.csv')
+js = JobSet.from_csv('jobs.csv')
 print(js.df.describe())
 
 js.df.hist()

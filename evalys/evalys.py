@@ -90,7 +90,7 @@ def main():
     jobsets = {}
     index = 0
     for inputCSV in sorted(args.inputCSV):
-        js = JobSet(inputCSV)
+        js = JobSet.from_csv(inputCSV)
         file_name = os.path.basename(inputCSV)
         file_name = unique_file_name(jobsets, file_name)
         jobsets[file_name] = js
