@@ -32,7 +32,7 @@ def annotate(ax, rect, annot):
 def plot_gantt(jobset, ax, title):
     for i, job in jobset.df.iterrows():
         RGB_tuples = generate_color_set(16)
-        col = RGB_tuples[job.jobID % len(RGB_tuples)]
+        col = RGB_tuples[i % len(RGB_tuples)]
         duration = job['execution_time']
         for i, itv in enumerate(jobset.res_set[job['jobID']]):
             (y0, y1) = itv
