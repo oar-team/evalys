@@ -19,6 +19,7 @@ def ids2itvs(ids):
 
     return itvs
 
+
 def string_to_interval_set(s):
     """Transforms a string like "1 2 3 7-9 13" into interval sets like
        [(1,3), (7,9), (13,13)]"""
@@ -38,6 +39,7 @@ def string_to_interval_set(s):
 
     return intervals
 
+
 def interval_set_to_set(intervals):
     s = set()
 
@@ -47,6 +49,7 @@ def interval_set_to_set(intervals):
 
     return s
 
+
 def set_to_interval_set(s):
     intervals = []
     l = list(s)
@@ -55,7 +58,7 @@ def set_to_interval_set(s):
     if len(l) > 0:
         i = 0
         current_interval = [l[i], l[i]]
-        i+=1
+        i += 1
 
         while i < len(l):
             if l[i] == current_interval[1] + 1:
@@ -63,15 +66,17 @@ def set_to_interval_set(s):
             else:
                 intervals.append(current_interval)
                 current_interval = [l[i], l[i]]
-            i+=1
+            i += 1
 
         if current_interval not in intervals:
             intervals.append(tuple(current_interval))
 
     return intervals
 
+
 def interval_set_to_string(intervals):
-    return ' '.join(['{}-{}'.format(begin, end) for (begin,end) in intervals])
+    return ' '.join(['{}-{}'.format(begin, end) for (begin, end) in intervals])
+
 
 class JobSet(object):
     def __init__(self, df):
@@ -81,7 +86,8 @@ class JobSet(object):
         # compute resources intervals
         for i, row in self.df.iterrows():
             raw_res_str = row['allocated_processors']
-            self.res_set[row['jobID']] = string_to_interval_set(raw_res_str)
+            self.res_set[row['jobID']] = string_to_interval_set(
+                str(raw_res_str))
 
         # compute resources bounds (+1 for max because of visu alignment
         # over the job number line
