@@ -30,7 +30,7 @@ def annotate(ax, rect, annot):
 
 
 def plot_gantt(jobset, ax, title, labels=True):
-    for _, job in jobset.df.iterrows():
+    for i, job in jobset.df.iterrows():
         RGB_tuples = generate_color_set(16)
         col = RGB_tuples[i % len(RGB_tuples)]
         duration = job['execution_time']
@@ -47,6 +47,7 @@ def plot_gantt(jobset, ax, title, labels=True):
     ax.grid(True)
     ax.set_title(title)
 
+
 def plot_pstates(pstates, x_horizon, ax, off_pstates=[]):
     for _, job in pstates.pseudo_jobs.iterrows():
         if job['pstate'] in off_pstates:
@@ -54,9 +55,10 @@ def plot_pstates(pstates, x_horizon, ax, off_pstates=[]):
             for machine_interval in interval_list:
                 (y0, y1) = machine_interval
                 (b, e) = (job['begin'], min(job['end'], x_horizon))
-                rect = mpatch.Rectangle((b,y0), e - b, y1 - y0 + 0.9,
-                                        color=(0,0,0))
+                rect = mpatch.Rectangle((b, y0), e - b, y1 - y0 + 0.9,
+                                        color=(0, 0, 0))
                 ax.add_artist(rect)
+
 
 def plot_gantt_pstates(jobset, pstates, ax, title,
                        labels=True, off_pstates=[]):
@@ -74,13 +76,15 @@ def plot_gantt_pstates(jobset, pstates, ax, title,
 
     plot_pstates(pstates, ax.get_xlim()[1], ax, off_pstates)
 
+
 def plot_series(series_type, jobsets, ax_series):
     '''
     Plot one or several time series about provided jobsets on the given ax
     series_type can be any value present in available_series.
     '''
     if series_type not in available_series:
-        raise AttributeError("The gieven attribute should be one of the folowing: {}".format(available_series))
+        raise AttributeError(
+            "The gieven attribute should be one of the folowing: {}".format(available_series))
 
     if series_type == "bonded_slowdown":
         pass

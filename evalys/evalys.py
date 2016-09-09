@@ -16,7 +16,6 @@ if not os.environ.get('DISPLAY'):
     matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatch
 from evalys.jobset import JobSet
 from evalys.visu import plot_gantt_general_shape, available_series, plot_series
 
@@ -61,6 +60,9 @@ def main():
         nb_subplot += 1
     if args.series:
         nb_subplot += 1
+    if not args.gantt and not args.gantt_diff and not args.series:
+        print("You must select at least one option (use -h to see available options)")
+        exit(1)
 
     fig, ax_list = plt.subplots(nb_subplot, sharex=True,)
                                 #sharey=True)
