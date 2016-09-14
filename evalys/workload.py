@@ -98,17 +98,24 @@ class Workload(object):
                                     df['proc_alloc']],
                                    axis=1)
         start_event_df.columns = event_columns
+        # Stop event give negative proc_alloc value
         stop_event_df = pd.concat([df['stop'],
                                    - df['proc_alloc']],
                                   axis=1)
         stop_event_df.columns = event_columns
 
-        event_df = start_event_df.append(stop_event_df)
-        event_df = pd.DataFrame(event_df.groupby('time').sum())
-        event_df = pd.concat([event_df['time'],
-                              event_df['proc_alloc'].cumsum()],
-                             axis=1)
-        return event_df
+        # merge events and sort them
+        event_df = start_event_df.append(
+            stop_event_df,
+            ignore_index=True).sort_values(by='time').reset_index(drop=True)
+
+        # convert timestamp to datetime
+        event_df.index = event_df.apply(
+            lambda x: datetime.datetime.fromtimestamp(
+                self.unix_start_time + x['time']), axis=1)
+
+        # merge events with the same timestamp
+        return event_df.groupby(event_df.index).sum()['proc_alloc'].cumsum()
 
     def gene_arriving_each_day(self):
         df = self.df
