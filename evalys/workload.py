@@ -2,6 +2,7 @@
 from __future__ import unicode_literals, print_function
 from collections import OrderedDict
 import pandas as pd
+import matplotlib.pyplot as plt
 import re
 import datetime
 
@@ -54,8 +55,8 @@ class Workload(object):
                     m = re.search(".*UnixStartTime:\s(\d+)", line)
                     if m:
                         self.unix_start_time = int(m.group(1))
-                        self.str_start_time = datetime.datetime.fromtimestamp(
-                            self.unix_start_time).strftime('%Y-%m-%d %H:%M:%S')
+                        self.start_time = datetime.datetime.fromtimestamp(
+                            self.unix_start_time)
 
                     m = re.search(".*MaxNodes:\s(\d+)", line)
                     if m:
@@ -73,11 +74,19 @@ class Workload(object):
                     # header is finished
                     break
 
+            # property initialization
+            self._utilisation = None
+
+    @property
     def utilisation(self):
         '''
         Calculate cluster utilisation over time:
         nb procs used / nb procs available
         '''
+        # Do not re-compute everytime
+        if self._utilisation:
+            return self._utilisation
+
         df = self.df.sort_values(by='submit')
         df['start'] = df['submit'] + df['wait']
         df['stop'] = df['start'] + df['runtime']
@@ -110,12 +119,23 @@ class Workload(object):
             ignore_index=True).sort_values(by='time').reset_index(drop=True)
 
         # convert timestamp to datetime
-        event_df.index = event_df.apply(
-            lambda x: datetime.datetime.fromtimestamp(
-                self.unix_start_time + x['time']), axis=1)
+        event_df.index = pd.to_datetime(event_df['time'] +
+                                        self.unix_start_time, unit='s')
 
         # merge events with the same timestamp
-        return event_df.groupby(event_df.index).sum()['proc_alloc'].cumsum()
+        self._utilisation = event_df.groupby(
+            event_df.index).sum()['proc_alloc'].cumsum()
+
+        return self._utilisation
+
+    def plot_utilisation(self):
+        u = self.utilisation
+        u.plot()
+        plt.plot([u.index[0],u.index[-1]], [self.max_procs, self.max_procs],
+                 color='k', linestyle='-', linewidth=2)
+
+    def plot_free_resources(self):
+        u = self.utilisation
 
     def gene_arriving_each_day(self):
         df = self.df
