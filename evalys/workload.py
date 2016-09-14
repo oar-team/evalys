@@ -7,31 +7,32 @@ import datetime
 
 
 class Workload(object):
-    def __init__(self, **kwargs):
-        if 'file' in kwargs:
-            # swf is the default format
-            # see: http://www.cs.huji.ac.il/labs/parallel/workload/swf.html
-            #
-            # the data format is one line per job, with 18 fields:
-            #  0 - Job Number, a counter field, starting from 1
-            #  1 - Submit Time, seconds. submittal time
-            #  2 - Wait Time, seconds. diff between submit and begin to run
-            #  3 - Run Time, seconds. end-time minus start-time
-            #  4 - Number of Processors, number of allocated processors
-            #  5 - Average CPU Time Used, seconds. user+system. avg over procs
-            #  6 - Used Memory, KB. avg over procs.
-            #  7 - Requested Number of Processors, requested number of processors
-            #  8 - Requested Time, seconds. user runtime estimation
-            #  9 - Requested Memory, KB. avg over procs.
-            # 10 - status (1=completed, 0=killed), 0=fail; 1=completed; 5=canceled
-            # 11 - User ID, user id
-            # 12 - Group ID, group id
-            # 13 - Executable (Application) Number, [1,2..n] n = app# appearing in log
-            # 14 - Queue Number, [1,2..n] n = queue# in the system
-            # 15 - Partition Number, [1,2..n] n = partition# in the systems
-            # 16 - Preceding Job Number,  cur job will start only after ...
-            # 17 - Think Time from Preceding Job, seconds should elapse between termination of
-            #
+    def __init__(self, swf_file=None):
+        if swf_file:
+            '''
+             swf is the default format
+             see: http://www.cs.huji.ac.il/labs/parallel/workload/swf.html
+
+             the data format is one line per job, with 18 fields:
+              0 - Job Number, a counter field, starting from 1
+              1 - Submit Time, seconds. submittal time
+              2 - Wait Time, seconds. diff between submit and begin to run
+              3 - Run Time, seconds. end-time minus start-time
+              4 - Number of Processors, number of allocated processors
+              5 - Average CPU Time Used, seconds. user+system. avg over procs
+              6 - Used Memory, KB. avg over procs.
+              7 - Requested Number of Processors, requested number of processors
+              8 - Requested Time, seconds. user runtime estimation
+              9 - Requested Memory, KB. avg over procs.
+             10 - status (1=completed, 0=killed), 0=fail; 1=completed; 5=canceled
+             11 - User ID, user id
+             12 - Group ID, group id
+             13 - Executable (Application) Number, [1,2..n] n = app# appearing in log
+             14 - Queue Number, [1,2..n] n = queue# in the system
+             15 - Partition Number, [1,2..n] n = partition# in the systems
+             16 - Preceding Job Number,  cur job will start only after ...
+             17 - Think Time from Preceding Job, seconds should elapse between termination of
+            '''
             columns = ['job', 'submit', 'wait', 'runtime', 'proc_alloc', 'cpu_used', 'mem_used', 'proc_req',
                        'user_est', 'mem_req', 'status', 'uid', 'gid', 'exe_num', 'queue', 'partition',
                        'prev_jobs', 'think_time']
@@ -39,11 +40,11 @@ class Workload(object):
             #             'Used Memory', 'Req Nb Proc', 'Req Time', 'Req Memory', 'Status', 'User',
             #             'Group', 'Application', 'Queue', 'Partition', 'Preceding Job', 'Think Time']
 
-            self.df = pd.read_csv(kwargs['file'], comment=';', names=columns, header=0, delim_whitespace=True)
+            self.df = pd.read_csv(swf_file, comment=';', names=columns, header=0, delim_whitespace=True)
 
             self.nb_jobs = len(self.df)
             # process header
-            header_file = open(kwargs['file'], 'r')
+            header_file = open(swf_file, 'r')
             self.header = ''
             for line in header_file:
                 if re.match("^;", line):
@@ -71,6 +72,43 @@ class Workload(object):
                 else:
                     # header is finished
                     break
+
+    def utilisation(self):
+        '''
+        Calculate cluster utilisation over time:
+        nb procs used / nb procs available
+        '''
+        df = self.df.sort_values(by='submit')
+        df['start'] = df['submit'] + df['wait']
+        df['stop'] = df['start'] + df['runtime']
+
+        # Cleaning:
+        # - still running jobs (runtime = -1)
+        # - not scheduled jobs (wait = -1)
+        # - no procs allocated (proc_alloc = -1)
+        max_time = df['stop'].max()
+        df.ix[df['runtime'] == -1, 'stop'] = max_time
+        df.ix[df['runtime'] == -1, 'start'] = max_time
+        df = df[df['proc_alloc'] > 0]
+
+        # Create a list of start and stop event associated to the number of
+        # proc allocation changes: starts add procs, stop remove procs
+        event_columns = ['time', 'proc_alloc']
+        start_event_df = pd.concat([df['start'],
+                                    df['proc_alloc']],
+                                   axis=1)
+        start_event_df.columns = event_columns
+        stop_event_df = pd.concat([df['stop'],
+                                   - df['proc_alloc']],
+                                  axis=1)
+        stop_event_df.columns = event_columns
+
+        event_df = start_event_df.append(stop_event_df)
+        event_df = pd.DataFrame(event_df.groupby('time').sum())
+        event_df = pd.concat([event_df['time'],
+                              event_df['proc_alloc'].cumsum()],
+                             axis=1)
+        return event_df
 
     def gene_arriving_each_day(self):
         df = self.df
