@@ -84,7 +84,7 @@ class Workload(object):
         nb procs used / nb procs available
         '''
         # Do not re-compute everytime
-        if self._utilisation:
+        if self._utilisation is not None:
             return self._utilisation
 
         df = self.df.sort_values(by='submit')
@@ -128,14 +128,67 @@ class Workload(object):
 
         return self._utilisation
 
-    def plot_utilisation(self):
+    def plot_utilisation(self, normalize=False):
+        '''
+        Plots the number of used resources against time
+        opt:
+            - normalize (bool) : normalize by the number of procs
+        '''
         u = self.utilisation
         u.plot()
-        plt.plot([u.index[0],u.index[-1]], [self.max_procs, self.max_procs],
+        if normalize:
+            u = u / self.max_procs
+        # plot a line for the number of procs
+        plt.plot([u.index[0], u.index[-1]], [self.max_procs, self.max_procs],
                  color='k', linestyle='-', linewidth=2)
 
-    def plot_free_resources(self):
-        u = self.utilisation
+    def plot_free_resources(self, normalize=False, free_time=None):
+        '''
+        Plots the number of free resources against time
+        opt:
+            - normalize (bool) : normalize by the number of procs
+            - free_time (timedelta in sec): give the number of resources
+              available at least for this time
+        '''
+        free = self.max_procs - self.utilisation
+
+        if free_time:
+            # go through the series to find resources that are free for a
+            # certaine amount of time
+            free_for_df = pd.Series()
+            t_grab = {}
+            for i in range(free.size):
+                if i == 0:
+                    prev_p = self.max_procs
+                else:
+                    prev_p = free.iloc[i-1]
+                p = free.iloc[i]
+                if p < prev_p:
+                    # new resources have been grab
+                    for r in range(p, prev_p):
+                        t_grab[r] = free.index[i]
+                else:
+                    # resources have been released
+                    for r in range(prev_p, p):
+                        t_release = free.index[i]
+                        res_free_time = t_release - t_grab[r]
+                        # print("resource {} released after {} time".format(r, res_free_time))
+                        if  res_free_time >= free_time:
+                            # This resources has been free for "free_time"
+                            free_for_df.set_value(t_release, res_free_time)
+                            print("find one slot at {} for resource {}".format(t_release, r))
+                #print("current time {}".format(free.index[i]))
+
+            return free_for_df
+
+        if normalize:
+            free = free / self.max_procs
+
+        free.plot()
+        # plot a line for the number of procs
+        plt.plot([free.index[0], free.index[-1]],
+                 [self.max_procs, self.max_procs],
+                 color='k', linestyle='-', linewidth=2)
 
     def gene_arriving_each_day(self):
         df = self.df
