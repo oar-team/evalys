@@ -14,8 +14,6 @@ def main():
                         help='The name of the CSV file which contains jobs information')
     parser.add_argument('--output', '-o',
                         help='The output file (format depending on the given extension, pdf is RECOMMENDED). For example: figure.pdf')
-    parser.add_argument('--title', default = 'Load',
-                        help="Sets the subplot title")
 
     args = parser.parse_args()
 
@@ -29,7 +27,7 @@ def main():
         ax_list = [ax_list]
 
     # Plot
-    plot_load(j, ax_list[0], str(args.title))
+    plot_load(j, ax_list[0], str(args.jobsCSV))
 
     # Figure outputting
     if args.output is not None:

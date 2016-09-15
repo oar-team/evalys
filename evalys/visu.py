@@ -129,6 +129,8 @@ def plot_load(jobset, ax, title, labels=True):
     ax.set_ylim(0, max(load.values()) + 1)
     ax.grid(True)
     ax.set_title(title)
+    ax.set_xlabel('proc. id')
+    ax.set_ylabel('load / s')
 
 
 def plot_series(series_type, jobsets, ax_series):
