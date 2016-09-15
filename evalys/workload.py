@@ -2,6 +2,7 @@
 from __future__ import unicode_literals, print_function
 from collections import OrderedDict
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import re
 import datetime
@@ -142,6 +143,51 @@ class Workload(object):
         plt.plot([u.index[0], u.index[-1]], [self.max_procs, self.max_procs],
                  color='k', linestyle='-', linewidth=2)
 
+    def resources_free_time(self):
+        free = self.max_procs - self.utilisation
+        # normalize by max procs
+        free = free / self.max_procs
+
+        # go through the series to find resources that are free for a
+        # certaine amount of time
+
+        # Init data structure
+        free_ratio = range(2, 9)
+        free_slots_arrays = {}
+        for ratio in free_ratio:
+            free_slots_arrays[ratio] = []
+        resource_used = np.zeros(9, dtype=bool)
+
+        for time, value in free.iteritems():
+            for ratio, i in zip(free_ratio, range(len(resource_used))):
+                # if state free > used
+                if not resource_used[i] and value <= ratio/10:
+                    resource_used[i] = True
+                    free_slots_arrays[ratio].append(time)
+                # if state used > free
+                if resource_used[i] and value > ratio/10:
+                    resource_used[i] = False
+                    begin_time_slot = free_slots_arrays[ratio][-1]
+                    slot = time - begin_time_slot
+                    slot_sec = (slot.microseconds + (slot.seconds + slot.days * 24 * 3600) * 10**6) / 10**6
+                    free_slots_arrays[ratio][-1] = slot_sec
+        return free_slots_arrays
+
+    def resources_free_time_plot(self):
+
+        free_slots_arrays = self.resources_free_time()
+        fig, axes = plt.subplots(nrows=len(free_slots_arrays), ncols=1)
+        # generate histogram
+        i = 0
+        for ratio, array in self.resources_free_time().items():
+            pd.Series(array).plot(kind='hist',
+                                  ax=axes[i],
+                                  title=str(ratio),
+                                  cumulative=True,
+                                  normed=1,
+                                  bins=500)
+            i = i + 1
+
     def plot_free_resources(self, normalize=False, free_time=None):
         '''
         Plots the number of free resources against time
@@ -151,35 +197,6 @@ class Workload(object):
               available at least for this time
         '''
         free = self.max_procs - self.utilisation
-
-        if free_time:
-            # go through the series to find resources that are free for a
-            # certaine amount of time
-            free_for_df = pd.Series()
-            t_grab = {}
-            for i in range(free.size):
-                if i == 0:
-                    prev_p = self.max_procs
-                else:
-                    prev_p = free.iloc[i-1]
-                p = free.iloc[i]
-                if p < prev_p:
-                    # new resources have been grab
-                    for r in range(p, prev_p):
-                        t_grab[r] = free.index[i]
-                else:
-                    # resources have been released
-                    for r in range(prev_p, p):
-                        t_release = free.index[i]
-                        res_free_time = t_release - t_grab[r]
-                        # print("resource {} released after {} time".format(r, res_free_time))
-                        if  res_free_time >= free_time:
-                            # This resources has been free for "free_time"
-                            free_for_df.set_value(t_release, res_free_time)
-                            print("find one slot at {} for resource {}".format(t_release, r))
-                #print("current time {}".format(free.index[i]))
-
-            return free_for_df
 
         if normalize:
             free = free / self.max_procs
