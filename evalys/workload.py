@@ -152,7 +152,7 @@ class Workload(object):
         # certaine amount of time
 
         # Init data structure
-        free_ratio = range(2, 9)
+        free_ratio = range(1, 10)
         free_slots_arrays = {}
         for ratio in free_ratio:
             free_slots_arrays[ratio] = []
@@ -176,16 +176,15 @@ class Workload(object):
     def resources_free_time_plot(self):
 
         free_slots_arrays = self.resources_free_time()
-        fig, axes = plt.subplots(nrows=len(free_slots_arrays), ncols=1)
+        fig, axes = plt.subplots(nrows=len(free_slots_arrays), ncols=1,
+                                 sharex=True)
         # generate histogram
         i = 0
         for ratio, array in self.resources_free_time().items():
-            pd.Series(array).plot(kind='hist',
-                                  ax=axes[i],
-                                  title=str(ratio),
-                                  cumulative=True,
-                                  normed=1,
-                                  bins=500)
+            serie = pd.Series(array)
+            serie.plot(kind='hist',
+                       ax=axes[i],
+                       title="free resources {}%".format(ratio*10))
             i = i + 1
 
     def plot_free_resources(self, normalize=False, free_time=None):
