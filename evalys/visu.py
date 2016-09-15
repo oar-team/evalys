@@ -8,6 +8,7 @@ import pandas as pd
 
 import colorsys
 
+
 plt.style.use('ggplot')
 
 matplotlib.rcParams['figure.figsize'] = (12.0, 8.0)
@@ -75,6 +76,63 @@ def plot_gantt_pstates(jobset, pstates, ax, title,
     ax.set_title(title)
 
     plot_pstates(pstates, ax.get_xlim()[1], ax, off_pstates)
+
+
+def plot_load(jobset, ax, title, labels=True):
+    """
+    Display the impact of each job on the load of each processor.
+
+    need: execution_time, jobID, allocated_processors
+    """
+    from evalys.jobset import interval_set_to_set, string_to_interval_set
+    # XXX: find a better way to organize modules to avoid this unnecessary
+    # circular dependency avoidance trick
+
+    def _draw_rect(ax, base, width, height, color, label):
+        rect = mpatch.Rectangle(base, width, duration, alpha=0.2, color=color)
+        if label:
+            annotate(ax, rect, label)
+        ax.add_artist(rect)
+
+    RGB_tuples = generate_color_set(16)
+    load = {p: 0.0 for p in range(*jobset.res_bounds)}
+
+    for row in jobset.df.itertuples():
+        color = RGB_tuples[row.Index % len(RGB_tuples)]
+        duration = row.execution_time
+        label = row.jobID if labels else None
+
+        procset = sorted(
+            interval_set_to_set(
+                string_to_interval_set(
+                    str(row.allocated_processors)
+                )
+            )
+        )
+        base = (procset[0], load[procset[0]])
+        width = 0  # width is incremented in the first loop iteration
+        for proc in procset:
+            if base[0] + width != proc or load[proc] != base[1]:
+                # we cannot merge across processors: draw the current
+                # rectangle, and start anew
+                _draw_rect(ax, base, width, duration, color, label)
+                base = (proc, load[proc])
+                width = 1
+            else:
+                # we can merge across processors: extend width, and continue
+                width += 1
+            load[proc] += duration
+
+        # draw last pending rectangle if necessary
+        if width > 0:
+            _draw_rect(ax, base, width, duration, color, label)
+
+    ax.set_xlim(jobset.res_bounds)
+    ax.set_ylim(0, max(load.values()) + 1)
+    ax.grid(True)
+    ax.set_title(title)
+    ax.set_xlabel('proc. id')
+    ax.set_ylabel('load / s')
 
 
 def plot_series(series_type, jobsets, ax_series):
