@@ -81,6 +81,8 @@ def plot_gantt_pstates(jobset, pstates, ax, title,
 def plot_load(jobset, ax, title, labels=True):
     """
     Display the impact of each job on the load of each processor.
+
+    need: execution_time, jobID, allocated_processors
     """
     from evalys.jobset import interval_set_to_set, string_to_interval_set
     # XXX: find a better way to organize modules to avoid this unnecessary

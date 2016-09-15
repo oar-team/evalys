@@ -95,9 +95,14 @@ class JobSet(object):
             min([b for x in self.res_set.values() for (b, e) in x]),
             max([e for x in self.res_set.values() for (b, e) in x]) + 1)
 
+    __converters = {
+        'jobID': str,
+        'allocated_processors': str,
+    }
+
     @classmethod
     def from_csv(cls, filename):
-        df = pd.read_csv(filename)
+        df = pd.read_csv(filename, converters=cls.__converters)
         return cls(df)
 
     def gantt(self, ax, title):
