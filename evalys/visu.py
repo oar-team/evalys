@@ -128,7 +128,7 @@ def plot_load(jobset, ax, title, labels=True):
             _draw_rect(ax, base, width, duration, color, label)
 
     ax.set_xlim(jobset.res_bounds)
-    ax.set_ylim(0, max(load.values()) + 1)
+    ax.set_ylim(0, 1.02 * max(load.values()))
     ax.grid(True)
     ax.set_title(title)
     ax.set_xlabel('proc. id')
