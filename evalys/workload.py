@@ -50,7 +50,6 @@ class Workload(object):
             self.header = ''
             for line in header_file:
                 if re.match("^;", line):
-                    print(line)
                     self.header += line
 
                     m = re.search(".*UnixStartTime:\s(\d+)", line)
@@ -254,7 +253,6 @@ class Workload(object):
             df_j = g.xs(i, level='week')  # dataframe uid / nb_jobs(count)
             for uid, row in df_j.iterrows():
                 if uid in job_nlargest_uid_0:
-                    print('uid:', uid)
                     jobs_week_uid_dict[uid][idx] = row['count']
                 else:
                     jobs_week_uid_dict[0][idx] += row['count']
