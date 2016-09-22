@@ -78,6 +78,10 @@ def interval_set_to_string(intervals):
     return ' '.join(['{}-{}'.format(begin, end) for (begin, end) in intervals])
 
 
+def recompute_interval(current_state, to_add, itv_new):
+    pass
+
+
 class JobSet(object):
     def __init__(self, df):
         self.res_set = {}
@@ -107,3 +111,39 @@ class JobSet(object):
 
     def gantt(self, ax, title):
         plot_gantt(self, ax, title)
+
+    def free_slots(self):
+        import numpy as np
+        df = self.df
+
+        # Create a list of start and stop event associated to the proc
+        # allocation:
+        # Free -> Used : grab = 1
+        # Used -> Free : grab = 0
+        event_columns = ['time', 'proc_alloc', 'grab']
+        start_event_df = pd.concat([df['starting_time'],
+                                    df['allocated_processors'],
+                                    pd.Series(np.ones(len(df), dtype=bool))],
+                                   axis=1)
+        start_event_df.columns = event_columns
+        # Stop event have zero in grab
+        stop_event_df = pd.concat([df['finish_time'],
+                                   df['allocated_processors'],
+                                   pd.Series(np.zeros(len(df), dtype=bool))],
+                                  axis=1)
+        stop_event_df.columns = event_columns
+
+        # merge events and sort them
+        event_df = start_event_df.append(
+            stop_event_df,
+            ignore_index=True).sort_values(by='time').reset_index(drop=True)
+
+        # return event_df
+        # All resources are free at the beginning
+        free_interval_serie = pd.Series([[self.res_bounds]])
+        for index, row in event_df.iterrows():
+            current_itv = free_interval_serie[index]
+            new_itv = recompute_interval(current_itv,
+                                         row.grab,
+                                         string_to_interval_set(row.proc_alloc))
+            free_interval_serie.append(index, new_itv)

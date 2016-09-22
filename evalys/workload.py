@@ -82,6 +82,7 @@ class Workload(object):
         '''
         Calculate cluster utilisation over time:
         nb procs used / nb procs available
+        return a series that contain the number of used processors time
         '''
         # Do not re-compute everytime
         if self._utilisation is not None:
@@ -122,7 +123,7 @@ class Workload(object):
         event_df.index = pd.to_datetime(event_df['time'] +
                                         self.unix_start_time, unit='s')
 
-        # merge events with the same timestamp
+        # sum procs and merge events with the same timestamp
         self._utilisation = event_df.groupby(
             event_df.index).sum()['proc_alloc'].cumsum()
 
@@ -143,12 +144,14 @@ class Workload(object):
                  color='k', linestyle='-', linewidth=2)
 
     def resources_free_time(self):
+        '''
+        go through the utilisation series to find resources that are free
+        for a certaine amount of time
+        '''
+
         free = self.max_procs - self.utilisation
         # normalize by max procs
         free = free / self.max_procs
-
-        # go through the series to find resources that are free for a
-        # certaine amount of time
 
         # Init data structure
         free_ratio = range(1, 10)
