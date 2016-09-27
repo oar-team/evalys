@@ -14,7 +14,7 @@ def compute_overall_utilisation():
     res = pd.Series()
     i = 0
     for f in files:
-        wl = workload.Workload(f)
+        wl = workload.Workload.from_csv(f)
         try:
             norm_util = wl.utilisation / wl.max_procs
             print('File: {}\nUtil: {}\n'.format(f, norm_util.mean()))

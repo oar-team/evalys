@@ -1,4 +1,11 @@
 # coding: utf-8
+'''
+This module contains the data and metadata given in the headers of the SWF
+format.
+
+SWF is the default format for parallel workload defined here:
+see: http://www.cs.huji.ac.il/labs/parallel/workload/swf.html
+'''
 from __future__ import unicode_literals, print_function
 from collections import OrderedDict
 import pandas as pd
@@ -9,80 +16,203 @@ import datetime
 
 
 class Workload(object):
-    def __init__(self, swf_file=None):
-        if swf_file:
-            '''
-             swf is the default format
-             see: http://www.cs.huji.ac.il/labs/parallel/workload/swf.html
+    '''
+    This class is a derived from the SWF format. SWF is the default format
+    for parallel workload defined here:
+    see: http://www.cs.huji.ac.il/labs/parallel/workload/swf.html
 
-             the data format is one line per job, with 18 fields:
-              0 - Job Number, a counter field, starting from 1
-              1 - Submit Time, seconds. submittal time
-              2 - Wait Time, seconds. diff between submit and begin to run
-              3 - Run Time, seconds. end-time minus start-time
-              4 - Number of Processors, number of allocated processors
-              5 - Average CPU Time Used, seconds. user+system. avg over procs
-              6 - Used Memory, KB. avg over procs.
-              7 - Requested Number of Processors, requested number of processors
-              8 - Requested Time, seconds. user runtime estimation
-              9 - Requested Memory, KB. avg over procs.
-             10 - status (1=completed, 0=killed), 0=fail; 1=completed; 5=canceled
-             11 - User ID, user id
-             12 - Group ID, group id
-             13 - Executable (Application) Number, [1,2..n] n = app# appearing in log
-             14 - Queue Number, [1,2..n] n = queue# in the system
-             15 - Partition Number, [1,2..n] n = partition# in the systems
-             16 - Preceding Job Number,  cur job will start only after ...
-             17 - Think Time from Preceding Job, seconds should elapse between termination of
-            '''
-            columns = ['job', 'submit', 'wait', 'runtime', 'proc_alloc', 'cpu_used', 'mem_used', 'proc_req',
-                       'user_est', 'mem_req', 'status', 'uid', 'gid', 'exe_num', 'queue', 'partition',
-                       'prev_jobs', 'think_time']
-            # columns_1 = ['Job', 'Submit Time', 'Wait Time', 'Run Time', 'Nb Alloc Proc', 'Average CPU',
-            #             'Used Memory', 'Req Nb Proc', 'Req Time', 'Req Memory', 'Status', 'User',
-            #             'Group', 'Application', 'Queue', 'Partition', 'Preceding Job', 'Think Time']
+    the data format is one line per job, with 18 fields:
+     0 - Job Number, a counter field, starting from 1
+     1 - Submit Time, seconds. submittal time
+     2 - Wait Time, seconds. diff between submit and begin to run
+     3 - Run Time, seconds. end-time minus start-time
+     4 - Number of Processors, number of allocated processors
+     5 - Average CPU Time Used, seconds. user+system. avg over procs
+     6 - Used Memory, KB. avg over procs.
+     7 - Requested Number of Processors, requested number of
+         processors
+     8 - Requested Time, seconds. user runtime estimation
+     9 - Requested Memory, KB. avg over procs.
+    10 - status (1=completed, 0=killed), 0=fail; 1=completed;
+         5=canceled
+    11 - User ID, user id
+    12 - Group ID, group id
+    13 - Executable (Application) Number, [1,2..n] n = app#
+         appearing in log
+    14 - Queue Number, [1,2..n] n = queue# in the system
+    15 - Partition Number, [1,2..n] n = partition# in the systems
+    16 - Preceding Job Number,  cur job will start only after ...
+    17 - Think Time from Preceding Job, seconds should elapse
+         between termination of
+    '''
+    metadata = {
+     'Version': '''
+        Version number of the standard format the file uses. The format
+        described here is version 2.''',
+     'Computer': '''
+        Brand and model of computer''',
+     'Installation': '''
+        Location of installation and machine name''',
+     'Acknowledge': '''
+        Name of person(s) to acknowledge for creating/collecting the
+        workload.''',
+     'Information': '''
+        Web site or email that contain more information about the
+        workload or installation.''',
+     'Conversion': '''
+        Name and email of whoever converted the log to the standard
+        format.''',
+     'MaxJobs': '''
+        Integer, total number of jobs in this workload file.''',
+     'MaxRecords': '''
+        Integer, total number of records in this workload file. If no
+        checkpointing/swapping information is included, there is one record
+        per job, and this is equal to MaxJobs. But with
+        chekpointing/swapping there may be multiple records per job. ''',
+     'Preemption': '''
+        Enumerated, with four possible values. 'No' means that jobs run to
+        completion, and are represented by a single line in the file. 'Yes'
+        means that the execution of a job may be split into several parts, and
+        each is represented by a separate line. 'Double' means that jobs
+        may be split, and their information appears twice in the file: once
+        as a one-line summary, and again as a sequence of lines
+        representing the parts, as suggested above. 'TS' means time slicing
+        is used, but no details are available.''',
+     'UnixStartTime': '''
+        When the log starts, in Unix time (seconds since the epoch)''',
+     'TimeZone': '''*DEPRECATED* and replaced by TimeZoneString.
+        A value to add to times given as seconds since the epoch. The sum can
+        then be fed into gmtime (Greenwich time function) to get the correct
+        date and hour of the day. The default is 0, and then gmtime can be used
+        directly.
+        Note:
+          do not use localtime, as then the results will depend on the
+          difference between your time zone and the installation time zone.''',
+     'TimeZoneString': '''
+        Replaces the buggy and now deprecated TimeZone. TimeZoneString is a
+        standard UNIX string indicating the time zone in which the log was
+        generated; this is actually the name of a zoneinfo file, e.g.
+        ``Europe/Paris''. All times within the SWF file are in this time
+        zone. For more details see the usage note below.''',
+     'StartTime': '''
+        When the log starts, in human readable form, in this
+        standard format: Tue Feb 21 18:44:15 IST 2006 (as printed by the UNIX
+        'date' utility).  EndTime: When the log ends (the last termination),
+        formatted like StartTime.''',
+     'MaxNodes': '''
+         Integer, number of nodes in the computer. List the number of
+         nodes in different partitions in parentheses if applicable.''',
+     'MaxProcs': '''
+         Integer, number of processors in the computer. This is different
+         from MaxNodes if each node is an SMP. List the number of processors
+         in different partitions in parentheses if applicable.''',
+     'MaxRuntime': '''
+         Integer, in seconds. This is the maximum that the system allowed, and
+         may be larger than any specific job's runtime in the workload.''',
+     'MaxMemory': '''
+         Integer, in kilobytes. Again, this is the maximum the system
+         allowed.''',
+     'AllowOveruse': '''
+         Boolean. 'Yes' if a job may use more than it requested for any
+         resource, 'No' if it can't.''',
+     'MaxQueues': '''
+         Integer, number of queues used.''',
+     'Queues': '''
+         A verbal description of the system's queues. Should explain the queue
+         number field (if it has known values). As a minimum it should be
+         explained how to tell between a batch and interactive job.  Queue: A
+         description of a single queue in the following format: queue-number
+         queue-name (optional-details). This should be repeated for all the
+         queues.''',
+     'MaxPartitions': '''
+         Integer, number of partitions used.''',
+     'Partitions': '''
+         A verbal description of the system's partitions, to explain the
+         partition number field. For example, partitions can be distinct
+         parallel machines in a cluster, or sets of nodes with different
+         attributes (memory configuration, number of CPUs, special attached
+         devices), especially if this is known to the scheduler. ''',
+     'Partition': '''
+         Description of a single partition.''',
+     'Note': '''
+         There may be several notes, describing special features of the log.
+         For example, ``The runtime is until the last node was freed; jobs may
+         have freed some of their nodes earlier''. '''
+    }
 
-            self.df = pd.read_csv(swf_file, comment=';', names=columns, header=0, delim_whitespace=True)
+    # clean metadata layout
+    metadata = {k: ' '.join(v.split()) for k, v in metadata.items()}
 
-            self.nb_jobs = len(self.df)
-            # process header
-            header_file = open(swf_file, 'r')
-            self.header = ''
-            for line in header_file:
-                if re.match("^;", line):
-                    self.header += line
+    def __init__(self, dataframe, **kwargs):
+        ''' dataframe should be an swf imported format and metadata can be
+        provided in kargs.'''
 
-                    m = re.search(".*UnixStartTime:\s(\d+)", line)
-                    if m:
-                        self.unix_start_time = int(m.group(1))
-                        self.start_time = datetime.datetime.fromtimestamp(
-                            self.unix_start_time)
+        self.df = dataframe
+        for key, value in kwargs.items():
+            # cast integer
+            if key.startswith('Max'):
+                value = int(value)
+            setattr(self, key, value)
 
-                    m = re.search(".*MaxNodes:\s(\d+)", line)
-                    if m:
-                        self.max_nodes = int(m.group(1))
+        # property initialization
+        self._utilisation = None
+        self._jobs_per_week_per_users = None
+        self._fraction_jobs_by_job_size = None
+        self._arriving_each_day = None
+        self._arriving_each_hour = None
 
-                    m = re.search(".*MaxProcs:\s(\d+)", line)
-                    if m:
-                        self.max_procs = int(m.group(1))
+    @classmethod
+    def from_csv(cls, filename):
+        columns = ['job', 'submit', 'wait', 'runtime', 'proc_alloc',
+                   'cpu_used', 'mem_used', 'proc_req', 'user_est',
+                   'mem_req', 'status', 'uid', 'gid', 'exe_num',
+                   'queue', 'partition', 'prev_jobs', 'think_time']
+        df = pd.read_csv(filename, comment=';', names=columns,
+                         header=0, delim_whitespace=True)
+        # sanitize trace
+        # - remove job checkpoint information (job status != 0 or 1)
+        df = df[lambda x: x['status'] <= 1]
 
-                    m = re.search(".MaxQueues*:\s(\d+)", line)
-                    if m:
-                        self.max_queues = int(m.group(1))
+        # process header
+        header_file = open(filename, 'r')
+        header = ''
+        metadata = {}
+        for line in header_file:
+            if re.match("^;", line):
+                header += line
+                m = re.search("^;\s(.*):\s(.*)", line)
+                if m:
+                    metadata[m.group(1).strip()] = m.group(2).strip()
+            else:
+                # header is finished
+                break
 
-                else:
-                    # header is finished
-                    break
+        return cls(df, **metadata)
 
-            # property initialization
-            self._utilisation = None
+    def to_csv(self, filename):
+        '''
+        Export the workload as SWF format CSV file
+        '''
+        # Write metadata
+        metadata = ""
+        for elem in Workload.metadata.keys():
+            if hasattr(self, elem):
+                metadata += "; {}: {}\n".format(elem, getattr(self, elem))
+        if metadata:
+            with open(filename, 'w') as f:
+                f.writelines(metadata)
+                self.df.to_csv(f, index=False)
 
     @property
     def utilisation(self):
         '''
         Calculate cluster utilisation over time:
-        nb procs used / nb procs available
-        return a series that contain the number of used processors time
+            nb procs used / nb procs available
+        returns:
+            a time indexed serie that contain the number of used processors
+            It is based on real time
+        TODO: Add ID list of jobs running and ID list of jobs in queue to
+        the returned dataframe
         '''
         # Do not re-compute everytime
         if self._utilisation is not None:
@@ -96,21 +226,23 @@ class Workload(object):
         # - still running jobs (runtime = -1)
         # - not scheduled jobs (wait = -1)
         # - no procs allocated (proc_alloc = -1)
-        max_time = df['stop'].max()
+        max_time = df['stop'].max() + 1000
         df.ix[df['runtime'] == -1, 'stop'] = max_time
         df.ix[df['runtime'] == -1, 'start'] = max_time
         df = df[df['proc_alloc'] > 0]
 
         # Create a list of start and stop event associated to the number of
         # proc allocation changes: starts add procs, stop remove procs
-        event_columns = ['time', 'proc_alloc']
+        event_columns = ['time', 'proc_alloc', 'job']
         start_event_df = pd.concat([df['start'],
-                                    df['proc_alloc']],
+                                    df['proc_alloc'],
+                                    df['job']],
                                    axis=1)
         start_event_df.columns = event_columns
         # Stop event give negative proc_alloc value
         stop_event_df = pd.concat([df['stop'],
-                                   - df['proc_alloc']],
+                                   - df['proc_alloc'],
+                                   df['job']],
                                   axis=1)
         stop_event_df.columns = event_columns
 
@@ -121,9 +253,14 @@ class Workload(object):
 
         # convert timestamp to datetime
         event_df.index = pd.to_datetime(event_df['time'] +
-                                        self.unix_start_time, unit='s')
+                                        int(self.UnixStartTime), unit='s')
 
         # sum procs and merge events with the same timestamp
+        # jobs = event_df.groupby(event_df.index)['job'].apply(set)
+        # procs = event_df.groupby(event_df.index).sum()['proc_alloc'].cumsum()
+
+        # self._utilisation = pd.concat([jobs, procs], axis=1)
+
         self._utilisation = event_df.groupby(
             event_df.index).sum()['proc_alloc'].cumsum()
 
@@ -138,9 +275,9 @@ class Workload(object):
         u = self.utilisation
         u.plot()
         if normalize:
-            u = u / self.max_procs
+            u = u / self.MaxProcs
         # plot a line for the number of procs
-        plt.plot([u.index[0], u.index[-1]], [self.max_procs, self.max_procs],
+        plt.plot([u.index[0], u.index[-1]], [self.MaxProcs, self.MaxProcs],
                  color='k', linestyle='-', linewidth=2)
 
     def resources_free_time(self):
@@ -149,9 +286,9 @@ class Workload(object):
         for a certaine amount of time
         '''
 
-        free = self.max_procs - self.utilisation
+        free = self.MaxProcs - self.utilisation
         # normalize by max procs
-        free = free / self.max_procs
+        free = free / self.MaxProcs
 
         # Init data structure
         free_ratio = range(1, 10)
@@ -171,7 +308,9 @@ class Workload(object):
                     resource_used[i] = False
                     begin_time_slot = free_slots_arrays[ratio][-1]
                     slot = time - begin_time_slot
-                    slot_sec = (slot.microseconds + (slot.seconds + slot.days * 24 * 3600) * 10**6) / 10**6
+                    slot_sec = (slot.microseconds + (slot.seconds +
+                                                     slot.days * 24 * 3600)
+                                * 10**6) / 10**6
                     free_slots_arrays[ratio][-1] = slot_sec
         return free_slots_arrays
 
@@ -189,68 +328,135 @@ class Workload(object):
                        title="free resources {}%".format(ratio*10))
             i = i + 1
 
-    def plot_free_resources(self, normalize=False, free_time=None):
+    def plot_free_resources(self, normalize=False):
         '''
         Plots the number of free resources against time
         opt:
             - normalize (bool) : normalize by the number of procs
-            - free_time (timedelta in sec): give the number of resources
-              available at least for this time
         '''
-        free = self.max_procs - self.utilisation
+        free = self.MaxProcs - self.utilisation
 
         if normalize:
-            free = free / self.max_procs
+            free = free / self.MaxProcs
 
         free.plot()
         # plot a line for the number of procs
         plt.plot([free.index[0], free.index[-1]],
-                 [self.max_procs, self.max_procs],
+                 [self.MaxProcs, self.MaxProcs],
                  color='k', linestyle='-', linewidth=2)
 
-    def gene_arriving_each_day(self):
+    def extract_periods_with_given_utilisation(self,
+                                               period_in_hours,
+                                               utilisation,
+                                               variation=0.001):
+        '''
+        This extract from the workload a period (in hours) with a given mean
+        utilisation (between 0 and 1).
+        returns:
+            a list of workload of the given periods, with the given
+            utilisation, extracted from the this workload.
+        '''
+        norm_util = self.utilisation / self.MaxProcs
+
+        periods = norm_util.resample(
+            str(period_in_hours) + 'H').mean()\
+            .loc[lambda x: x >= (utilisation - variation)]\
+            .loc[lambda x: x <= (utilisation + variation)]
+
+        # reindex workload by start time to extract easily
+        df = self.df
+        df['start'] = self.df['submit'] + self.df['wait']
+        df = df.sort_values(by='start').set_index(['start'])
+        df.index = pd.to_datetime(df.index + int(self.UnixStartTime), unit='s')
+
+        extracted = []
+        for period_begin in periods.index:
+            start = df.index.searchsorted(period_begin)
+            end = df.index.searchsorted(
+                period_begin + pd.to_timedelta(period_in_hours, unit='H'))
+            # Create a Workload object from extracted dataframe
+            wl = Workload(df[start:end].reset_index(drop=True),
+                          Conversion="Workload extracted using Evalys: "
+                                     "https://github.com/oar-team/evalys",
+                          Information=self.Information,
+                          Computer=self.Computer,
+                          Installation=self.Installation,
+                          Note="Period of {} hours with a mean utilisation "
+                               "of {}".format(period_in_hours, utilisation),
+                          MaxProcs=self.MaxProcs,
+                          UnixStartTime=int(
+                              period_begin.to_datetime().timestamp()))
+            extracted.append(wl)
+
+        return extracted
+
+    @property
+    def arriving_each_day(self):
+        # Do not re-compute everytime
+        if self._arriving_each_day is not None:
+            return self._arriving_each_day
+
         df = self.df
         df['day'] = df.apply(lambda x: datetime.datetime.fromtimestamp(
-            self.unix_start_time+x['submit']).strftime('%u'), axis=1)
+            int(self.UnixStartTime)+x['submit']).strftime('%u'), axis=1)
         days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
         grouped = df.groupby('day')
-        df1 = grouped['job'].agg({'jobs': lambda x: float(x.count())/self.nb_jobs})
+        df1 = grouped['job'].agg(
+            {'jobs': lambda x: float(x.count())/self.MaxJobs})
         nb_procs = df['proc_req'].sum()
-        df2 = grouped['proc_req'].agg({'procs': lambda x: float(x.sum())/nb_procs})
+        df2 = grouped['proc_req'].agg(
+            {'procs': lambda x: float(x.sum())/nb_procs})
 
         df1['procs'] = df2['procs']
         df1.index = days
-        self.arriving_each_day = df1
+        self._arriving_each_day = df1
+        return df1
 
-    def gene_arriving_each_hour(self):
+    @property
+    def arriving_each_hour(self):
+        # Do not re-compute everytime
+        if self._arriving_each_hour is not None:
+            return self._arriving_each_hour
+
         df = self.df
         df['hour'] = df.apply(lambda x: datetime.datetime.fromtimestamp(
-            self.unix_start_time+x['submit']).strftime('%H'), axis=1)
+            int(self.UnixStartTime)+x['submit']).strftime('%H'), axis=1)
 
         grouped = df.groupby('hour')
-        df1 = grouped['job'].agg({'jobs': lambda x: float(x.count())/self.nb_jobs})
+        df1 = grouped['job'].agg(
+            {'jobs': lambda x: float(x.count())/self.MaxJobs})
         nb_procs = df['proc_req'].sum()
-        df2 = grouped['proc_req'].agg({'procs': lambda x: float(x.sum())/nb_procs})
+        df2 = grouped['proc_req'].agg(
+            {'procs': lambda x: float(x.sum())/nb_procs})
 
         df1['procs'] = df2['procs']
-        self.arriving_each_hour = df1
+        self._arriving_each_hour = df1
+        return self._arriving_each_hour
 
-    def gene_jobs_per_week_per_user(self, nb=6):
+    @property
+    def jobs_per_week_per_user(self, nb=6):
+        # Do not re-compute everytime
+        if self._jobs_per_week_per_user is not None:
+            return self._jobs_per_week_per_user
+
         df = self.df
         df['week'] = df.apply(lambda x: datetime.datetime.fromtimestamp(
-            self.unix_start_time+x['submit']).strftime('%W'), axis=1)
+            int(self.UnixStartTime)+x['submit']).strftime('%W'), axis=1)
         grouped = df.groupby(['week', 'uid'])
 
         da = grouped['job'].agg({'count': 'count'})
         nb_weeks = len(da.index.levels[0])
 
         # identify nb largest contributors (uid), 0 uid is for others)
-        job_nlargest_uid = list(df.groupby('uid')['job'].count().nlargest(nb).index)
-        job_nlargest_uid_0 = [0] + job_nlargest_uid[::-1]  # [ 0, reversed list ]
+        job_nlargest_uid = list(
+            df.groupby('uid')['job'].count().nlargest(nb).index)
+        # [ 0, reversed list ]
+        job_nlargest_uid_0 = [0] + job_nlargest_uid[::-1]
 
         # jobs_week_uid_dict = {i: [0]*nb_weeks for i in job_nlargest_uid_0}
-        jobs_week_uid_dict = OrderedDict((i, [0]*nb_weeks) for i in job_nlargest_uid_0)
+        jobs_week_uid_dict = OrderedDict(
+            (i, [0]*nb_weeks) for i in job_nlargest_uid_0)
         idx = 0
         for i, g in da.groupby(level=0):
             df_j = g.xs(i, level='week')  # dataframe uid / nb_jobs(count)
@@ -261,35 +467,16 @@ class Workload(object):
                     jobs_week_uid_dict[0][idx] += row['count']
             idx += 1
 
-        self.jobs_per_week_per_users = pd.DataFrame(jobs_week_uid_dict)
+        self._jobs_per_week_per_users = pd.DataFrame(jobs_week_uid_dict)
+        return self._jobs_per_week_per_users
 
-    def gene_procs_per_week_per_user(self):
-        pass
+    @property
+    def fraction_jobs_by_job_size(self):
+        # Do not re-compute everytime
+        if self._fraction_jobs_by_job_size is not None:
+            return self._fraction_jobs_by_job_size
 
-    def gene_fraction_jobs_by_job_size(self):
         grouped = self.df.groupby('proc_alloc')
-        self.fraction_jobs_by_job_size = grouped['job'].agg({'jobs': lambda x: float(x.count())/self.nb_jobs})
-        
-        # fig = plt.figure()
-        # ax = fig.add_subplot(2, 1, 1)
-        # ax.set_xscale('log', basex=2) need to bars' width
-        # http://stackoverflow.com/questions/27534350/set-constant-width-to-every-bar-in-a-bar-plot
-        # df1.plot(kind='bar', ax=ax)
-        # 
-    def gene_fraction_jobs_by_job_runtime(self):
-        # grouped = self.df.groupby('runtime')
-        # self.fraction_jobs_by_job_runtime = grouped['job']\
-        #    .agg({'jobs': lambda x: float(x.count())/self.nb_jobs})
-
-        # fig = plt.figure()
-        # ax = fig.add_subplot(2, 1, 1)
-        # ax.set_xscale('log'
-        # df.hist(bins=np.logspace(1, 4.5 , 100), column='runtime')
-        pass
-
-    def generate_swf_log_dfs(self):
-        '''Generate dataframes usable to plot swf log graphs'''
-        print("Generate arriving_each_day dataframe")
-        self.gene_arriving_each_day()
-        print("Generate arriving_each_hour dataframe")
-        self.gene_arriving_each_hour()
+        self._fraction_jobs_by_job_size = grouped['job'].agg(
+            {'jobs': lambda x: float(x.count())/self.nb_jobs})
+        return self._fraction_jobs_by_job_size

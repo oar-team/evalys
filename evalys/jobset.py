@@ -2,84 +2,8 @@
 from __future__ import unicode_literals, print_function
 import pandas as pd
 from evalys.visu import plot_gantt
-
-
-def ids2itvs(ids):
-    """Convert list of int to list of intervals"""
-    itvs = []
-    if ids:
-        b = ids[0]
-        e = ids[0]
-        for i in ids:
-            if i > (e + 1):  # end itv and prepare new itv
-                itvs.append((b, e))
-                b = i
-            e = i
-        itvs.append((b, e))
-
-    return itvs
-
-
-def string_to_interval_set(s):
-    """Transforms a string like "1 2 3 7-9 13" into interval sets like
-       [(1,3), (7,9), (13,13)]"""
-    intervals = []
-    res_str = s.split(' ')
-    if '-' in (' ').join(res_str):
-        # it is already intervals so get it directly
-        for inter in res_str:
-            try:
-                (begin, end) = inter.split('-')
-                intervals.append((int(begin), int(end)))
-            except ValueError:
-                intervals.append((int(inter), int(inter)))
-    else:
-        res = sorted([int(x) for x in res_str])
-        intervals = ids2itvs(res)
-
-    return intervals
-
-
-def interval_set_to_set(intervals):
-    s = set()
-
-    for (begin, end) in intervals:
-        for x in range(begin, end+1):
-            s.add(x)
-
-    return s
-
-
-def set_to_interval_set(s):
-    intervals = []
-    l = list(s)
-    l.sort()
-
-    if len(l) > 0:
-        i = 0
-        current_interval = [l[i], l[i]]
-        i += 1
-
-        while i < len(l):
-            if l[i] == current_interval[1] + 1:
-                current_interval[1] = l[i]
-            else:
-                intervals.append(current_interval)
-                current_interval = [l[i], l[i]]
-            i += 1
-
-        if current_interval not in intervals:
-            intervals.append(tuple(current_interval))
-
-    return intervals
-
-
-def interval_set_to_string(intervals):
-    return ' '.join(['{}-{}'.format(begin, end) for (begin, end) in intervals])
-
-
-def recompute_interval(current_state, to_add, itv_new):
-    pass
+from evalys.interval_set import \
+        union, difference, string_to_interval_set
 
 
 class JobSet(object):
@@ -97,7 +21,7 @@ class JobSet(object):
         # over the job number line
         self.res_bounds = (
             min([b for x in self.res_set.values() for (b, e) in x]),
-            max([e for x in self.res_set.values() for (b, e) in x]) + 1)
+            max([e for x in self.res_set.values() for (b, e) in x]))
 
     __converters = {
         'jobID': str,
@@ -138,12 +62,19 @@ class JobSet(object):
             stop_event_df,
             ignore_index=True).sort_values(by='time').reset_index(drop=True)
 
-        # return event_df
         # All resources are free at the beginning
-        free_interval_serie = pd.Series([[self.res_bounds]])
+        event_columns = ['time', 'proc_alloc']
+        first_row = event_df.time[0], [self.res_bounds]
+        free_interval_serie = pd.DataFrame(
+            [first_row], index=['0'], columns=event_columns)
         for index, row in event_df.iterrows():
-            current_itv = free_interval_serie[index]
-            new_itv = recompute_interval(current_itv,
-                                         row.grab,
-                                         string_to_interval_set(row.proc_alloc))
-            free_interval_serie.append(index, new_itv)
+            current_itv = free_interval_serie.ix[index]['proc_alloc']
+            if row.grab:
+                new_itv = difference(current_itv,
+                                     string_to_interval_set(row.proc_alloc))
+            else:
+                new_itv = union(current_itv,
+                                string_to_interval_set(row.proc_alloc))
+            new_row = [row.time, new_itv]
+            free_interval_serie.loc[index + 1] = new_row
+        return free_interval_serie
