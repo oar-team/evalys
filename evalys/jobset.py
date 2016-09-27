@@ -3,7 +3,7 @@ from __future__ import unicode_literals, print_function
 import pandas as pd
 from evalys.visu import plot_gantt
 from evalys.interval_set import \
-        union, difference, string_to_interval_set
+        union, difference, intersection, string_to_interval_set
 
 
 class JobSet(object):
@@ -27,6 +27,19 @@ class JobSet(object):
         'jobID': str,
         'allocated_processors': str,
     }
+
+    columns = ['jobID',
+               'submission_time',
+               'requested_number_of_processors',
+               'requested_time',
+               'success',
+               'starting_time',
+               'execution_time',
+               'finish_time',
+               'waiting_time',
+               'turnaround_time',
+               'stretch',
+               'allocated_processors']
 
     @classmethod
     def from_csv(cls, filename):
@@ -77,4 +90,32 @@ class JobSet(object):
                                 string_to_interval_set(row.proc_alloc))
             new_row = [row.time, new_itv]
             free_interval_serie.loc[index + 1] = new_row
-        return free_interval_serie
+        # return free_interval_serie
+
+        # free_resources_slots contains tuple of
+        # (slot_begin_time,free_resources_intervals)
+        free_slots = [(free_interval_serie.index[0],
+                      [self.res_bounds])]
+        columns = ['allocated_processors', 'start_time', 'finish_time']
+        free_slots_df = pd.DataFrame(columns=columns)
+        prev_free_itvs = [self.res_bounds]
+        slots = 0
+
+        for curr_time, curr_free_itvs in free_interval_serie.iterrows():
+            taken_resources = difference(prev_free_itvs, current_itv)
+            if taken_resources:
+                # store it and update free slot
+                for begin_time, itvs in free_slots:
+                    to_update = intersection(itvs, taken_resources)
+                    if to_update:
+                        # store new slots
+                        new_slot = [to_update, begin_time, curr_time]
+                        slots = slots + 1
+                        free_slots_df.loc[slots] = new_slot
+                        # update free slots
+                        itvs = difference(itvs, to_update)
+
+            freed_resources = difference(current_itv, prev_free_itvs)
+            if freed_resources:
+                # udpate free resource slot
+                raise('Not Implemented yet')
