@@ -50,7 +50,7 @@ class JobSet(object):
     def gantt(self, ax, title):
         plot_gantt(self, ax, title)
 
-    def free_slots(self):
+    def free_intervals(self):
         import numpy as np
         df = self.df
 
@@ -78,9 +78,9 @@ class JobSet(object):
 
         # All resources are free at the beginning
         event_columns = ['time', 'proc_alloc']
-        first_row = event_df.time[0], [self.res_bounds]
-        free_interval_serie = pd.DataFrame(
-            [first_row], index=['0'], columns=event_columns)
+        first_row = [0, [self.res_bounds]]
+        free_interval_serie = pd.DataFrame(columns=event_columns)
+        free_interval_serie.loc[0] = first_row
         for index, row in event_df.iterrows():
             current_itv = free_interval_serie.ix[index]['proc_alloc']
             if row.grab:
@@ -91,10 +91,12 @@ class JobSet(object):
                                 string_to_interval_set(row.proc_alloc))
             new_row = [row.time, new_itv]
             free_interval_serie.loc[index + 1] = new_row
-        # return free_interval_serie
+        return free_interval_serie
 
+    def free_slots(self):
         # slots_time contains tuple of
         # (slot_begin_time,free_resources_intervals)
+        free_interval_serie = self.free_intervals()
         slots_time = [(free_interval_serie.time[0],
                       [self.res_bounds])]
         columns = ['jobID', 'allocated_processors',
@@ -109,6 +111,9 @@ class JobSet(object):
             curr_time = curr_row.time
             taken_resources = difference(prev_free_itvs,
                                          curr_row.proc_alloc)
+            freed_resources = difference(curr_row.proc_alloc,
+                                         prev_free_itvs)
+            assert not (freed_resources and taken_resources)
             if taken_resources:
                 # slot ends: store it and update free slot
                 for begin_time, itvs in slots_time:
@@ -116,7 +121,8 @@ class JobSet(object):
                     if to_update != []:
                         # store new slots
                         slots = slots + 1
-                        new_slot = [slots, interval_set_to_string(to_update),
+                        new_slot = [str(slots),
+                                    interval_set_to_string(to_update),
                                     begin_time,
                                     curr_time,
                                     curr_time - begin_time,
@@ -129,8 +135,6 @@ class JobSet(object):
                     else:
                         new_slots_time.append((begin_time, itvs))
 
-            freed_resources = difference(curr_row.proc_alloc,
-                                         prev_free_itvs)
             if freed_resources:
                 # slots begin: udpate free slot
                 if not new_slots_time:
@@ -140,7 +144,5 @@ class JobSet(object):
             # update previous
             prev_free_itvs = curr_row.proc_alloc
             # clean slots_free
-            print('before:{}'.format(slots_time))
             slots_time = new_slots_time
-            print('after:{}'.format(slots_time))
         return free_slots_df
