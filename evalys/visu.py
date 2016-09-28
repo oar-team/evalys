@@ -172,7 +172,7 @@ def plot_series(series_type, jobsets, ax_series):
         for serie_name, serie in series.items():
             ax_series.plot(serie, label=serie_name)
         ax_series.set_title(series_type)
-        ax_series.legend(loc='best')
+        ax_series.legend(loc='upper left')
 
     elif series_type == "all":
         pass
