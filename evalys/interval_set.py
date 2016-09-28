@@ -48,7 +48,6 @@ def string_to_interval_set(s):
        [(1,3), (7,9), (13,13)]"""
     intervals = []
     if not s:
-        print("Warning: Interval set is empty")
         return []
     try:
         res_str = s.split(' ')
@@ -112,12 +111,13 @@ def set_to_interval_set(s):
 #
 
 
-def difference(itvs1, itvs2):
+def difference(itvs_base, itvs2):
     """ returns the difference between an interval set and an other
 
     >>> difference([(1, 1), (3, 4)], [(1, 2), (4, 7)])
     [(3, 3)]
     """
+    itvs1 = string_to_interval_set(interval_set_to_string(itvs_base))
     lx = len(itvs1)
     ly = len(itvs2)
     i = 0
