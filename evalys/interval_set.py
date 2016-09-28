@@ -36,29 +36,35 @@ def _ids_to_itervals(ids):
     return itvs
 
 
-
 def string_to_interval_set(s):
     """Transforms a string like "1 2 3 7-9 13" into interval sets like
        [(1,3), (7,9), (13,13)]"""
     intervals = []
-    res_str = s.split(' ')
-    if '-' in (' ').join(res_str):
-        # it is already intervals so get it directly
-        for inter in res_str:
-            try:
-                (begin, end) = inter.split('-')
-                intervals.append((int(begin), int(end)))
-            except ValueError:
-                intervals.append((int(inter), int(inter)))
-    else:
-        res = sorted([int(x) for x in res_str])
-        intervals = _ids_to_itervals(res)
+    if not s:
+        print("Warning: Interval set is empty")
+        return []
+    try:
+        res_str = s.split(' ')
+        if '-' in (' ').join(res_str):
+            # it is already intervals so get it directly
+            for inter in res_str:
+                try:
+                    (begin, end) = inter.split('-')
+                    intervals.append((int(begin), int(end)))
+                except ValueError:
+                    intervals.append((int(inter), int(inter)))
+        else:
+            res = sorted([int(x) for x in res_str])
+            intervals = _ids_to_itervals(res)
+    except ValueError:
+        print("Bad interval format. Parsed string is: {}".format(s))
 
     return intervals
 
 #
 # Set conversion
 #
+
 
 def interval_set_to_set(intervals):
     s = set()
