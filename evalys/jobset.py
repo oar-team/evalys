@@ -4,7 +4,7 @@ import pandas as pd
 from evalys.visu import plot_gantt
 from evalys.interval_set import \
         union, difference, intersection, string_to_interval_set, \
-        interval_set_to_string
+        interval_set_to_string, total
 
 
 class JobSet(object):
@@ -49,6 +49,10 @@ class JobSet(object):
 
     def gantt(self, ax, title):
         plot_gantt(self, ax, title)
+
+    def utilisation(self):
+        return total([self.res_bounds]) \
+                - self.free_intervals()['proc_alloc'].apply(total)
 
     def free_intervals(self):
         import numpy as np

@@ -105,6 +105,18 @@ def set_to_interval_set(s):
 
     return intervals
 
+#
+# Info operations
+#
+
+
+def total(itvs):
+    '''
+    Compute the total number of element by a cumulative sum on the size
+    of all intervals
+    '''
+    # Add +1 because it is a closed interval
+    return sum([end - begin for begin, end in itvs]) + 1
 
 #
 # Ensemble operations

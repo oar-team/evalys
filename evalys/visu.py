@@ -142,10 +142,9 @@ def plot_series(series_type, jobsets, ax_series):
     '''
     if series_type not in available_series:
         raise AttributeError(
-            "The gieven attribute should be one of the folowing: {}".format(available_series))
+            "The gieven attribute should be one of the folowing:"
+            "{}".format(available_series))
 
-    if series_type == "bonded_slowdown":
-        pass
     elif series_type == "waiting_time":
         series = {}
         indexes = {}
@@ -156,7 +155,8 @@ def plot_series(series_type, jobsets, ax_series):
             series_data[jobset_name] = []
             jobset = jobsets[jobset_name]
 
-            df_sorted_by_finished_time = jobset.df.sort_values(by='finish_time')
+            df_sorted_by_finished_time = jobset.df.sort_values(
+                by='finish_time')
             for index in range(1, len(df_sorted_by_finished_time)):
                 df_cut = df_sorted_by_finished_time[:index]
                 # store index
@@ -174,8 +174,6 @@ def plot_series(series_type, jobsets, ax_series):
         ax_series.set_title(series_type)
         ax_series.legend(loc='upper left')
 
-    elif series_type == "all":
-        pass
     else:
         raise RuntimeError('The serie \"{}\" is not implemeted yet')
 
@@ -211,3 +209,7 @@ def plot_gantt_general_shape(jobset_list, ax):
     ax.legend(legend_rect, legend_label, loc='center',
               bbox_to_anchor=(0.5, 1.06),
               fancybox=True, shadow=True, ncol=5)
+    ax.set_xlim((jobset.df.submission_time.min(), jobset.df.finish_time.max()))
+    ax.set_ylim(jobset.res_bounds)
+    ax.grid(True)
+    ax.set_title("General shape")
