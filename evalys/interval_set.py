@@ -17,7 +17,14 @@ An interval set is a list of not overlapping intervals.
 
 
 def interval_set_to_string(intervals):
-    return ' '.join(['{}-{}'.format(begin, end) for (begin, end) in intervals])
+    res = ''
+    for (begin, end) in intervals:
+        if begin == end:
+            res += " " + str(begin)
+
+        else:
+            res += " " + '{}-{}'.format(begin, end)
+    return res.strip()
 
 
 def _ids_to_itervals(ids):
