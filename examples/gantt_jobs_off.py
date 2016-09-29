@@ -26,7 +26,7 @@ def main():
     args = parser.parse_args()
 
     # Create data structures from input args
-    j = JobSet(args.jobsCSV)
+    j = JobSet.from_csv(args.jobsCSV)
     c = PowerStatesChanges(args.pstatesCSV)
 
     off_pstates = [int(x) for x in args.pstatesOFF]
