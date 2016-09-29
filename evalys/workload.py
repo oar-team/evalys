@@ -13,6 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import re
 import datetime
+from evalys.metrics import compute_load
 
 
 class Workload(object):
@@ -156,6 +157,7 @@ class Workload(object):
 
         # property initialization
         self._utilisation = None
+        self._queue = None
         self._jobs_per_week_per_users = None
         self._fraction_jobs_by_job_size = None
         self._arriving_each_day = None
@@ -163,10 +165,11 @@ class Workload(object):
 
     @classmethod
     def from_csv(cls, filename):
-        columns = ['job', 'submit', 'wait', 'runtime', 'proc_alloc',
-                   'cpu_used', 'mem_used', 'proc_req', 'user_est',
-                   'mem_req', 'status', 'uid', 'gid', 'exe_num',
-                   'queue', 'partition', 'prev_jobs', 'think_time']
+        columns = ['jobID', 'submission_time', 'waiting_time',
+                   'execution_time', 'proc_alloc', 'cpu_used', 'mem_used',
+                   'proc_req', 'user_est', 'mem_req', 'status', 'uid',
+                   'gid', 'exe_num', 'queue', 'partition', 'prev_jobs',
+                   'think_time']
         df = pd.read_csv(filename, comment=';', names=columns,
                          header=0, delim_whitespace=True)
         # sanitize trace
@@ -204,6 +207,22 @@ class Workload(object):
                 self.df.to_csv(f, index=False)
 
     @property
+    def queue(self):
+        '''
+        Calculate cluster queue size over time in number of procs
+        returns:
+            a time indexed serie that contain the number of used processors
+            It is based on real time if UnixStartTime is defined
+        '''
+        # Do not re-compute everytime
+        if self._queue is not None:
+            return self._queue
+
+        self._queue = compute_load(self.df, 'submission_time', 'starting_time',
+                                   'proc_req')
+        return self._queue
+
+    @property
     def utilisation(self):
         '''
         Calculate cluster utilisation over time:
@@ -218,67 +237,32 @@ class Workload(object):
         if self._utilisation is not None:
             return self._utilisation
 
-        df = self.df.sort_values(by='submit')
-        df['start'] = df['submit'] + df['wait']
-        df['stop'] = df['start'] + df['runtime']
-
-        # Cleaning:
-        # - still running jobs (runtime = -1)
-        # - not scheduled jobs (wait = -1)
-        # - no procs allocated (proc_alloc = -1)
-        max_time = df['stop'].max() + 1000
-        df.ix[df['runtime'] == -1, 'stop'] = max_time
-        df.ix[df['runtime'] == -1, 'start'] = max_time
-        df = df[df['proc_alloc'] > 0]
-
-        # Create a list of start and stop event associated to the number of
-        # proc allocation changes: starts add procs, stop remove procs
-        event_columns = ['time', 'proc_alloc', 'job']
-        start_event_df = pd.concat([df['start'],
-                                    df['proc_alloc'],
-                                    df['job']],
-                                   axis=1)
-        start_event_df.columns = event_columns
-        # Stop event give negative proc_alloc value
-        stop_event_df = pd.concat([df['stop'],
-                                   - df['proc_alloc'],
-                                   df['job']],
-                                  axis=1)
-        stop_event_df.columns = event_columns
-
-        # merge events and sort them
-        event_df = start_event_df.append(
-            stop_event_df,
-            ignore_index=True).sort_values(by='time').reset_index(drop=True)
-
-        # convert timestamp to datetime
-        event_df.index = pd.to_datetime(event_df['time'] +
-                                        int(self.UnixStartTime), unit='s')
-
-        # sum procs and merge events with the same timestamp
-        # jobs = event_df.groupby(event_df.index)['job'].apply(set)
-        # procs = event_df.groupby(event_df.index).sum()['proc_alloc'].cumsum()
-
-        # self._utilisation = pd.concat([jobs, procs], axis=1)
-
-        self._utilisation = event_df.groupby(
-            event_df.index).sum()['proc_alloc'].cumsum()
-
+        self._utilisation = compute_load(self.df, 'starting_time', 'stop',
+                                         'proc_alloc')
         return self._utilisation
 
-    def plot_utilisation(self, normalize=False):
+    def plot_utilisation(self, ax=None, normalize=False):
         '''
         Plots the number of used resources against time
         opt:
             - normalize (bool) : normalize by the number of procs
         '''
         u = self.utilisation
-        u.plot()
+
+        # leave room to have better view
+        plt.margins(x=0.1, y=0.1)
+
         if normalize:
             u = u / self.MaxProcs
+
+        # plot utilisation
+        u.plot(drawstyle="steps", ax=ax)
+
         # plot a line for the number of procs
-        plt.plot([u.index[0], u.index[-1]], [self.MaxProcs, self.MaxProcs],
-                 color='k', linestyle='-', linewidth=2)
+        if hasattr(self, "MaxProcs"):
+            plt.plot([u.index[0], u.index[-1]],
+                     [self.MaxProcs, self.MaxProcs],
+                     color='k', linestyle='-', linewidth=2, ax=ax)
 
     def resources_free_time(self):
         '''
@@ -365,8 +349,9 @@ class Workload(object):
 
         # reindex workload by start time to extract easily
         df = self.df
-        df['start'] = self.df['submit'] + self.df['wait']
-        df = df.sort_values(by='start').set_index(['start'])
+        df['starting_time'] = \
+            self.df['submission_time'] + self.df['waiting_time']
+        df = df.sort_values(by='starting_time').set_index(['starting_time'])
         df.index = pd.to_datetime(df.index + int(self.UnixStartTime), unit='s')
 
         extracted = []
@@ -398,11 +383,11 @@ class Workload(object):
 
         df = self.df
         df['day'] = df.apply(lambda x: datetime.datetime.fromtimestamp(
-            int(self.UnixStartTime)+x['submit']).strftime('%u'), axis=1)
+            int(self.UnixStartTime)+x['submission_time']).strftime('%u'), axis=1)
         days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
         grouped = df.groupby('day')
-        df1 = grouped['job'].agg(
+        df1 = grouped['jobID'].agg(
             {'jobs': lambda x: float(x.count())/self.MaxJobs})
         nb_procs = df['proc_req'].sum()
         df2 = grouped['proc_req'].agg(
@@ -421,10 +406,10 @@ class Workload(object):
 
         df = self.df
         df['hour'] = df.apply(lambda x: datetime.datetime.fromtimestamp(
-            int(self.UnixStartTime)+x['submit']).strftime('%H'), axis=1)
+            int(self.UnixStartTime)+x['submission_time']).strftime('%H'), axis=1)
 
         grouped = df.groupby('hour')
-        df1 = grouped['job'].agg(
+        df1 = grouped['jobID'].agg(
             {'jobs': lambda x: float(x.count())/self.MaxJobs})
         nb_procs = df['proc_req'].sum()
         df2 = grouped['proc_req'].agg(
@@ -442,15 +427,15 @@ class Workload(object):
 
         df = self.df
         df['week'] = df.apply(lambda x: datetime.datetime.fromtimestamp(
-            int(self.UnixStartTime)+x['submit']).strftime('%W'), axis=1)
+            int(self.UnixStartTime)+x['submission_time']).strftime('%W'), axis=1)
         grouped = df.groupby(['week', 'uid'])
 
-        da = grouped['job'].agg({'count': 'count'})
+        da = grouped['jobID'].agg({'count': 'count'})
         nb_weeks = len(da.index.levels[0])
 
         # identify nb largest contributors (uid), 0 uid is for others)
         job_nlargest_uid = list(
-            df.groupby('uid')['job'].count().nlargest(nb).index)
+            df.groupby('uid')['jobID'].count().nlargest(nb).index)
         # [ 0, reversed list ]
         job_nlargest_uid_0 = [0] + job_nlargest_uid[::-1]
 
@@ -477,6 +462,6 @@ class Workload(object):
             return self._fraction_jobs_by_job_size
 
         grouped = self.df.groupby('proc_alloc')
-        self._fraction_jobs_by_job_size = grouped['job'].agg(
+        self._fraction_jobs_by_job_size = grouped['jobID'].agg(
             {'jobs': lambda x: float(x.count())/self.nb_jobs})
         return self._fraction_jobs_by_job_size

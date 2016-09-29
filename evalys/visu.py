@@ -4,7 +4,7 @@ from __future__ import unicode_literals, print_function
 import matplotlib
 import matplotlib.patches as mpatch
 from matplotlib import pyplot as plt
-import pandas as pd
+from evalys import utils
 
 import colorsys
 
@@ -142,40 +142,23 @@ def plot_series(series_type, jobsets, ax_series):
     '''
     if series_type not in available_series:
         raise AttributeError(
-            "The gieven attribute should be one of the folowing: {}".format(available_series))
+            "The gieven attribute should be one of the folowing:"
+            "{}".format(available_series))
 
-    if series_type == "bonded_slowdown":
-        pass
-    elif series_type == "waiting_time":
+    if series_type == "waiting_time":
         series = {}
-        indexes = {}
-        series_data = {}
-        # calculate series for each jobset
         for jobset_name in jobsets.keys():
-            indexes[jobset_name] = []
-            series_data[jobset_name] = []
             jobset = jobsets[jobset_name]
-
-            df_sorted_by_finished_time = jobset.df.sort_values(by='finish_time')
-            for index in range(1, len(df_sorted_by_finished_time)):
-                df_cut = df_sorted_by_finished_time[:index]
-                # store index
-                event_time = df_cut.finish_time[-1:].values[0]
-                indexes[jobset_name].append(event_time)
-                # store summed waiting_time
-                waiting_time_sum = df_cut.waiting_time.sum()
-                series_data[jobset_name].append(waiting_time_sum)
             #  create a serie
-            series[jobset_name] = pd.Series(data=series_data[jobset_name],
-                                            index=indexes[jobset_name])
+            series[jobset_name] = utils.cumulative_waiting_time(jobset.df)
         # plot series
         for serie_name, serie in series.items():
-            ax_series.plot(serie, label=serie_name)
+            serie.plot(ax=ax_series, label=serie_name, drawstyle="steps")
         ax_series.set_title(series_type)
         ax_series.legend(loc='upper left')
 
-    elif series_type == "all":
-        pass
+        return series
+
     else:
         raise RuntimeError('The serie \"{}\" is not implemeted yet')
 
@@ -211,3 +194,7 @@ def plot_gantt_general_shape(jobset_list, ax):
     ax.legend(legend_rect, legend_label, loc='center',
               bbox_to_anchor=(0.5, 1.06),
               fancybox=True, shadow=True, ncol=5)
+    ax.set_xlim((jobset.df.submission_time.min(), jobset.df.finish_time.max()))
+    ax.set_ylim(jobset.res_bounds)
+    ax.grid(True)
+    ax.set_title("General shape")
