@@ -1,6 +1,7 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
 import pandas as pd
+import numpy as np
 from evalys.visu import plot_gantt
 from evalys.interval_set import \
         union, difference, intersection, string_to_interval_set, \
@@ -8,6 +9,21 @@ from evalys.interval_set import \
 
 
 class JobSet(object):
+    '''
+    A JobSet is a set of jobs with it state, its time properties and
+    the resources it is associated with.
+
+    It takes a dataframe in input that are intended to have the columns
+    defined in JobSet.columns.
+
+    The 'allocated_processors' should contain the string representation of
+    an interval set of the allocated resources for the given job, i.e. for
+    this interval:
+        # interval_set representation
+        [(1, 2), (5, 5), (10, 50)]
+        # strinf representation
+        1-2 5 10-50
+    '''
     def __init__(self, df):
         self.res_set = {}
         self.df = df
@@ -18,8 +34,6 @@ class JobSet(object):
             self.res_set[row['jobID']] = string_to_interval_set(
                 str(raw_res_str))
 
-        # compute resources bounds (+1 for max because of visu alignment
-        # over the job number line
         self.res_bounds = (
             min([b for x in self.res_set.values() for (b, e) in x]),
             max([e for x in self.res_set.values() for (b, e) in x]))
@@ -51,11 +65,16 @@ class JobSet(object):
         plot_gantt(self, ax, title)
 
     def utilisation(self):
-        return total([self.res_bounds]) \
-                - self.free_intervals()['proc_alloc'].apply(total)
+        df = self.free_intervals()
+        df['total'] = total([self.res_bounds]) - df['proc_alloc'].apply(total)
+        df = df.set_index(df.time, drop=True)
+        return df
 
     def free_intervals(self):
-        import numpy as np
+        '''
+        Return a dataframe with the free resources over time. Each line
+        corespounding to an event in the jobset.
+        '''
         df = self.df
 
         # Create a list of start and stop event associated to the proc
@@ -98,6 +117,11 @@ class JobSet(object):
         return free_interval_serie
 
     def free_slots(self):
+        '''
+        Return a DataFrame (compatible with a JobSet) that contains all the
+        not overlapping square free slots of this JobSet maximzing the time.
+        it can be transform to a JobSet to be plot as gantt chart.
+        '''
         # slots_time contains tuple of
         # (slot_begin_time,free_resources_intervals)
         free_interval_serie = self.free_intervals()
@@ -117,7 +141,6 @@ class JobSet(object):
                                          curr_row.proc_alloc)
             freed_resources = difference(curr_row.proc_alloc,
                                          prev_free_itvs)
-            assert not (freed_resources and taken_resources)
             if taken_resources:
                 # slot ends: store it and update free slot
                 for begin_time, itvs in slots_time:

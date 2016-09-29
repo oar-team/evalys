@@ -1,11 +1,12 @@
 """
 Functions to manage and convert and intervals set.
 
-An interval is tuple (begin, end). An interval of 1 element where eID is the
+An interval is a tuple (begin, end). An interval of 1 element where eID is the
 element ID is formated (eID, eID).
 
-An interval set is a list of not overlapping intervals.
+An interval set is a list of non overlapping intervals.
 """
+import copy
 
 #
 # Conversion operations
@@ -17,6 +18,12 @@ An interval set is a list of not overlapping intervals.
 
 
 def interval_set_to_string(intervals):
+    '''
+    Convert interval set to strings:
+
+    >>> interval_set_to_string([(1, 2), (5, 5), (10, 50)])
+    '1-2 5 10-50'
+    '''
     res = ''
     for (begin, end) in intervals:
         if begin == end:
@@ -44,8 +51,12 @@ def _ids_to_itervals(ids):
 
 
 def string_to_interval_set(s):
-    """Transforms a string like "1 2 3 7-9 13" into interval sets like
-       [(1,3), (7,9), (13,13)]"""
+    """Transforms a string interval set representation to interval set
+    >>> string_to_interval_set("1 2 3 7-9 13")
+    [(1, 3), (7, 9), (13, 13)]
+    >>> string_to_interval_set("")
+    []
+    """
     intervals = []
     if not s:
         return []
@@ -65,7 +76,7 @@ def string_to_interval_set(s):
     except ValueError:
         print("Bad interval format. Parsed string is: {}".format(s))
 
-    return intervals
+    return aggregate(intervals)
 
 #
 # Set conversion
@@ -129,7 +140,7 @@ def difference(itvs_base, itvs2):
     >>> difference([(1, 1), (3, 4)], [(1, 2), (4, 7)])
     [(3, 3)]
     """
-    itvs1 = string_to_interval_set(interval_set_to_string(itvs_base))
+    itvs1 = copy.copy(itvs_base)
     lx = len(itvs1)
     ly = len(itvs2)
     i = 0
@@ -206,9 +217,9 @@ def aggregate(itvs):
 def intersection(itvs1, itvs2):
     """Returns an interval set that is an intersection of itvs1 and itvs2.
 
-    >>> intersect([(1, 2), (4, 5)], [(1, 3), (5, 7)])
+    >>> intersection([(1, 2), (4, 5)], [(1, 3), (5, 7)])
     [(1, 2), (5, 5)]
-    >>> intersect([(2, 3), (5, 7)], [(1, 1), (4, 4)])
+    >>> intersection([(2, 3), (5, 7)], [(1, 1), (4, 4)])
     []
     """
 
@@ -264,3 +275,7 @@ def union(itvs1, itvs2):
     diff21 = difference(itvs2, itvs1)
     union = aggregate(sorted(intersect + diff12 + diff21))
     return union
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
