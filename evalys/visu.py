@@ -4,7 +4,7 @@ from __future__ import unicode_literals, print_function
 import matplotlib
 import matplotlib.patches as mpatch
 from matplotlib import pyplot as plt
-from evalys import utils
+from evalys import metrics
 
 import colorsys
 
@@ -150,7 +150,7 @@ def plot_series(series_type, jobsets, ax_series):
         for jobset_name in jobsets.keys():
             jobset = jobsets[jobset_name]
             #  create a serie
-            series[jobset_name] = utils.cumulative_waiting_time(jobset.df)
+            series[jobset_name] = metrics.cumulative_waiting_time(jobset.df)
         # plot series
         for serie_name, serie in series.items():
             serie.plot(ax=ax_series, label=serie_name, drawstyle="steps")
