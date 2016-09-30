@@ -22,7 +22,7 @@ def cumulative_waiting_time(dataframe, start_timestamp=None):
 
 
 def compute_load(dataframe, col_begin, col_end, col_cumsum,
-                 UnixStartTime=None):
+                 UnixStartTime=0):
     # Avoid side effect
     df = pd.DataFrame.copy(dataframe)
     df['starting_time'] = df['submission_time'] + df['waiting_time']
@@ -60,10 +60,7 @@ def compute_load(dataframe, col_begin, col_end, col_cumsum,
         ignore_index=True).sort_values(by='time').reset_index(drop=True)
 
     # convert timestamp to datetime
-    if UnixStartTime:
-        event_df.index = pd.to_datetime(event_df['time'] +
-                                        int(UnixStartTime), unit='s')
-    else:
-        event_df.index = event_df['time']
+    event_df.index = pd.to_datetime(event_df['time'] +
+                                    int(UnixStartTime), unit='s')
 
     return event_df.groupby(event_df.index).sum()[col_cumsum].cumsum()
