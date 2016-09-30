@@ -155,6 +155,10 @@ class Workload(object):
                 value = int(value)
             setattr(self, key, value)
 
+        # Initialise start time
+        if not hasattr(self, "UnixStartTime"):
+            self.UnixStartTime = 0
+
         # property initialization
         self._utilisation = None
         self._queue = None
@@ -219,7 +223,7 @@ class Workload(object):
             return self._queue
 
         self._queue = compute_load(self.df, 'submission_time', 'starting_time',
-                                   'proc_req')
+                                   'proc_req', self.UnixStartTime)
         return self._queue
 
     @property
@@ -238,7 +242,7 @@ class Workload(object):
             return self._utilisation
 
         self._utilisation = compute_load(self.df, 'starting_time', 'stop',
-                                         'proc_alloc')
+                                         'proc_alloc', self.UnixStartTime)
         return self._utilisation
 
     def plot_utilisation(self, ax=None, normalize=False):
@@ -323,6 +327,8 @@ class Workload(object):
         if normalize:
             free = free / self.MaxProcs
 
+        free.index = pd.to_datetime(free['time'] +
+                                    int(self.UnixStartTime), unit='s')
         free.plot()
         # plot a line for the number of procs
         plt.plot([free.index[0], free.index[-1]],
@@ -383,7 +389,8 @@ class Workload(object):
 
         df = self.df
         df['day'] = df.apply(lambda x: datetime.datetime.fromtimestamp(
-            int(self.UnixStartTime)+x['submission_time']).strftime('%u'), axis=1)
+            int(self.UnixStartTime)+x['submission_time']).strftime('%u'),
+            axis=1)
         days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
         grouped = df.groupby('day')
@@ -406,7 +413,8 @@ class Workload(object):
 
         df = self.df
         df['hour'] = df.apply(lambda x: datetime.datetime.fromtimestamp(
-            int(self.UnixStartTime)+x['submission_time']).strftime('%H'), axis=1)
+            int(self.UnixStartTime)+x['submission_time']).strftime('%H'),
+            axis=1)
 
         grouped = df.groupby('hour')
         df1 = grouped['jobID'].agg(
@@ -427,7 +435,8 @@ class Workload(object):
 
         df = self.df
         df['week'] = df.apply(lambda x: datetime.datetime.fromtimestamp(
-            int(self.UnixStartTime)+x['submission_time']).strftime('%W'), axis=1)
+            int(self.UnixStartTime)+x['submission_time']).strftime('%W'),
+            axis=1)
         grouped = df.groupby(['week', 'uid'])
 
         da = grouped['jobID'].agg({'count': 'count'})
