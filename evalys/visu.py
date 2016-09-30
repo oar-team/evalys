@@ -4,12 +4,14 @@ from __future__ import unicode_literals, print_function
 import matplotlib
 import matplotlib.patches as mpatch
 from matplotlib import pyplot as plt
+import pandas as pd
 from evalys import metrics
+import random
 
 import colorsys
 
 
-plt.style.use('ggplot')
+# plt.style.use('ggplot')
 
 matplotlib.rcParams['figure.figsize'] = (12.0, 8.0)
 
@@ -151,6 +153,8 @@ def plot_series(series_type, jobsets, ax_series):
             jobset = jobsets[jobset_name]
             #  create a serie
             series[jobset_name] = metrics.cumulative_waiting_time(jobset.df)
+            series[jobset_name].index = pd.to_datetime(
+                jobset.df['submission_time'], unit='s')
         # plot series
         for serie_name, serie in series.items():
             serie.plot(ax=ax_series, label=serie_name, drawstyle="steps")
@@ -198,3 +202,55 @@ def plot_gantt_general_shape(jobset_list, ax):
     ax.set_ylim(jobset.res_bounds)
     ax.grid(True)
     ax.set_title("General shape")
+
+
+def plot_job_details(dataframe, ax, title):
+    # TODO manage also the Jobset case
+    # Avoid side effect
+    df = pd.DataFrame.copy(dataframe)
+
+    df['starting_time'] = df['submission_time'] + df['waiting_time']
+    df['finish_time'] = df['starting_time'] + df['execution_time']
+
+    to_plot = {'submission_time': ('blue', 'o'),
+               'starting_time': ('green', '>'),
+               'finish_time': ('red', 'o')}
+
+    # df['submission_time'] = pd.to_datetime(df['submission_time'], unit='s')
+    # df['waiting_time'] = pd.to_datetime(df['waiting_time'], unit='s')
+    # df['execution_time'] = pd.to_datetime(df['execution_time'], unit='s')
+    df['submission_time'] = df['submission_time'] / 1000000
+    df['waiting_time'] = df['waiting_time'] / 1000000
+    df['execution_time'] = df['execution_time'] / 1000000
+    random.seed(a=0)
+    for _, item in df.iterrows():
+        y = item['proc_alloc'] + random.uniform(-0.5, 0.5)
+        x_begin = item['submission_time']
+        x_end = item['finish_time']
+        plt.plot([x_begin, x_end], [y, y],
+                 color='k', linestyle='-', linewidth=2)
+
+    for serie, (color, marker) in to_plot.items():
+        x = df[serie]
+        # add jitter
+        random.seed(a=0)
+        y = df['proc_alloc'].apply(lambda x: x + random.uniform(-0.5, 0.5))
+        ax.plot(kind='scatter', x=x, y=y, c=color, marker=marker,
+                size=120, label=serie)
+
+    ax.title = title + ": job details"
+
+
+def plot_series_comparison(series, axe):
+    ''' Plot and compare two serie in post step '''
+    assert len(series) == 2
+    for serie_name, serie in series.items():
+        serie.plot(drawstyle="steps-post", ax=axe, label=serie_name)
+
+    df = pd.DataFrame(series).fillna(method='ffill')
+    y1 = df[list(series.keys())[0]]
+    y2 = df[list(series.keys())[1]]
+    axe.fill_between(df.index, y1, y2, where=y2 < y1, facecolor='red',
+                     step='post', alpha=0.5)
+    axe.fill_between(df.index, y1, y2, where=y2 > y1, facecolor='green',
+                     step='post', alpha=0.5)
