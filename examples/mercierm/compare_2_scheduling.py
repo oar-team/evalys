@@ -21,9 +21,9 @@ visu.plot_series_comparison({"random": w.queue,
                             axes[1],
                             "Queue comparison")
 
-visu.plot_job_details(w.df, axes[2], "random")
+visu.plot_job_details(w.df, 100, axes[2], "random")
 
-visu.plot_job_details(w0.df, axes[3], "wait")
+visu.plot_job_details(w0.df, 100, axes[3], "wait")
 
 visu.plot_series("waiting_time", {"random": w, "wait": w0}, axes[4])
 

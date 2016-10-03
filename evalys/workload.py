@@ -208,7 +208,8 @@ class Workload(object):
         if metadata:
             with open(filename, 'w') as f:
                 f.writelines(metadata)
-                self.df.to_csv(f, index=False)
+                self.df.to_csv(f, index=False, header=False,
+                               sep="\t")
 
     @property
     def queue(self):

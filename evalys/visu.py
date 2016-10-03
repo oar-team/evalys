@@ -205,7 +205,7 @@ def plot_gantt_general_shape(jobset_list, ax):
     ax.set_title("General shape")
 
 
-def plot_job_details(dataframe, ax, title):
+def plot_job_details(dataframe, size, ax, title):
     # TODO manage also the Jobset case
     # Avoid side effect
     df = pd.DataFrame.copy(dataframe)
@@ -213,9 +213,12 @@ def plot_job_details(dataframe, ax, title):
     df['starting_time'] = df['submission_time'] + df['waiting_time']
     df['finish_time'] = df['starting_time'] + df['execution_time']
 
-    to_plot = [('starting_time', ('green', '>')),
-               ('submission_time', ('blue', '.')),
-               ('finish_time', ('red', '|'))]
+    to_plot = [('starting_time', 'green', '>', size),
+               ('submission_time', 'blue', '.', 0),
+               ('finish_time', 'red', '|', size * 2)]
+
+    lines = [['submission_time', 'starting_time', 'blue', 0, size],
+             ['starting_time', 'finish_time', 'green', size, size * 2]]
 
     df['submission_time'] = pd.to_datetime(df['submission_time'], unit='s')
     df['starting_time'] = pd.to_datetime(df['starting_time'], unit='s')
@@ -225,21 +228,25 @@ def plot_job_details(dataframe, ax, title):
     plt.sca(ax)
 
     # plot lines
+    # add jitter
+    jitter = size / 10
     random.seed(a=0)
-    for _, item in df.iterrows():
-        y = item['proc_alloc'] + random.uniform(-0.5, 0.5)
-        x_begin = item['submission_time']
-        x_end = item['finish_time']
-        plt.plot([x_begin, x_end], [y, y],
-                 color='k', linestyle='-', linewidth=1, alpha=0.5)
+    new_proc_alloc = df['proc_alloc'].apply(
+        lambda x: x + random.uniform(-jitter, jitter))
+    for begin, end, color, treshold_begin, treshold_end in lines:
+        for i, item in df.iterrows():
+            x_begin = item[begin]
+            x_end = item[end]
+            plt.plot([x_begin, x_end], [new_proc_alloc[i] + treshold_begin,
+                                        new_proc_alloc[i] + treshold_end],
+                     color=color, linestyle='-', linewidth=1, alpha=0.2)
+
     # plot one point per serie
-    for serie, (color, marker) in to_plot:
+    for serie, color, marker, treshold in to_plot:
         x = df[serie]
         # Convert date to matplotlib float representation
         x = x.dt.to_pydatetime()
-        # add jitter
-        random.seed(a=0)
-        y = df['proc_alloc'].apply(lambda x: x + random.uniform(-0.5, 0.5))
+        y = new_proc_alloc + treshold
         plt.scatter(x, y, c=color, marker=marker,
                     s=60, label=serie, alpha=0.5)
 
