@@ -154,17 +154,18 @@ def plot_series(series_type, jobsets, ax_series):
             #  create a serie
             series[jobset_name] = metrics.cumulative_waiting_time(jobset.df)
             series[jobset_name].index = pd.to_datetime(
-                jobset.df['submission_time'], unit='s')
+                jobset.df['submission_time'] + jobset.df['waiting_time'],
+                unit='s')
         # plot series
         for serie_name, serie in series.items():
             serie.plot(ax=ax_series, label=serie_name, drawstyle="steps")
-        ax_series.set_title(series_type)
-        ax_series.legend(loc='upper left')
-
-        return series
-
     else:
         raise RuntimeError('The serie \"{}\" is not implemeted yet')
+
+    # Manage legend
+    ax_series.legend(loc='upper left')
+    ax_series.set_title(series_type)
+    ax_series.grid(True)
 
 
 def plot_gantt_general_shape(jobset_list, ax):
@@ -212,45 +213,60 @@ def plot_job_details(dataframe, ax, title):
     df['starting_time'] = df['submission_time'] + df['waiting_time']
     df['finish_time'] = df['starting_time'] + df['execution_time']
 
-    to_plot = {'submission_time': ('blue', 'o'),
-               'starting_time': ('green', '>'),
-               'finish_time': ('red', 'o')}
+    to_plot = [('starting_time', ('green', '>')),
+               ('submission_time', ('blue', '.')),
+               ('finish_time', ('red', '|'))]
 
-    # df['submission_time'] = pd.to_datetime(df['submission_time'], unit='s')
-    # df['waiting_time'] = pd.to_datetime(df['waiting_time'], unit='s')
-    # df['execution_time'] = pd.to_datetime(df['execution_time'], unit='s')
-    df['submission_time'] = df['submission_time'] / 1000000
-    df['waiting_time'] = df['waiting_time'] / 1000000
-    df['execution_time'] = df['execution_time'] / 1000000
+    df['submission_time'] = pd.to_datetime(df['submission_time'], unit='s')
+    df['starting_time'] = pd.to_datetime(df['starting_time'], unit='s')
+    df['finish_time'] = pd.to_datetime(df['finish_time'], unit='s')
+
+    # select the axe
+    plt.sca(ax)
+
+    # plot lines
     random.seed(a=0)
     for _, item in df.iterrows():
         y = item['proc_alloc'] + random.uniform(-0.5, 0.5)
         x_begin = item['submission_time']
         x_end = item['finish_time']
         plt.plot([x_begin, x_end], [y, y],
-                 color='k', linestyle='-', linewidth=2)
-
-    for serie, (color, marker) in to_plot.items():
+                 color='k', linestyle='-', linewidth=1, alpha=0.5)
+    # plot one point per serie
+    for serie, (color, marker) in to_plot:
         x = df[serie]
+        # Convert date to matplotlib float representation
+        x = x.dt.to_pydatetime()
         # add jitter
         random.seed(a=0)
         y = df['proc_alloc'].apply(lambda x: x + random.uniform(-0.5, 0.5))
-        ax.plot(kind='scatter', x=x, y=y, c=color, marker=marker,
-                size=120, label=serie)
+        plt.scatter(x, y, c=color, marker=marker,
+                    s=60, label=serie, alpha=0.5)
 
-    ax.title = title + ": job details"
+    ax.grid(True)
+    ax.set_title(title)
 
 
-def plot_series_comparison(series, axe):
+def plot_series_comparison(series, axe, title):
     ''' Plot and compare two serie in post step '''
     assert len(series) == 2
-    for serie_name, serie in series.items():
-        serie.plot(drawstyle="steps-post", ax=axe, label=serie_name)
+
+    first_serie_name = list(series.keys())[0]
+    first_serie = list(series.values())[0]
+    first_serie.plot(drawstyle="steps-post", ax=axe, label=first_serie_name)
+
+    second_serie_name = list(series.keys())[1]
+    second_serie = list(series.values())[1]
+    second_serie.plot(drawstyle="steps-post", ax=axe, label=second_serie_name)
 
     df = pd.DataFrame(series).fillna(method='ffill')
-    y1 = df[list(series.keys())[0]]
-    y2 = df[list(series.keys())[1]]
+    y1 = df[first_serie_name]
+    y2 = df[second_serie_name]
     axe.fill_between(df.index, y1, y2, where=y2 < y1, facecolor='red',
-                     step='post', alpha=0.5)
+                     step='post', alpha=0.5,
+                     label=first_serie_name + ">" + second_serie_name)
     axe.fill_between(df.index, y1, y2, where=y2 > y1, facecolor='green',
-                     step='post', alpha=0.5)
+                     step='post', alpha=0.5,
+                     label=first_serie_name + "<" + second_serie_name)
+    axe.grid(True)
+    axe.set_title(title)
