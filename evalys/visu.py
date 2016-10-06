@@ -229,7 +229,7 @@ def plot_job_details(dataframe, size, ax, title):
 
     # plot lines
     # add jitter
-    jitter = size / 10
+    jitter = size / 20
     random.seed(a=0)
     new_proc_alloc = df['proc_alloc'].apply(
         lambda x: x + random.uniform(-jitter, jitter))
