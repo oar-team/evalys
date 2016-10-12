@@ -5,11 +5,12 @@ from evalys import workload
 
 fig, axes = plt.subplots(nrows=5, ncols=1, sharex=True)
 
+
 w = workload.Workload.from_csv(
-    "/home/mercierm/Documents/trace_valentin/random.swf")
+    "./tests/easy_mediumWL_smallPF.swf")
 
 w0 = workload.Workload.from_csv(
-    "/home/mercierm/Documents/trace_valentin/wait.swf")
+    "./tests/filler_mediumWL_smallPF.swf")
 
 visu.plot_series_comparison({"random": w.utilisation,
                              "wait": w0.utilisation},
