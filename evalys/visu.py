@@ -209,6 +209,7 @@ def plot_job_details(dataframe, size, ax, title):
     # TODO manage also the Jobset case
     # Avoid side effect
     df = pd.DataFrame.copy(dataframe)
+    df = df.sort_values(by='jobID')
 
     df['starting_time'] = df['submission_time'] + df['waiting_time']
     df['finish_time'] = df['starting_time'] + df['execution_time']
