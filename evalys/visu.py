@@ -45,8 +45,9 @@ def plot_gantt(jobset, ax, title, labels=True):
                 annotate(ax, rect, str(job['jobID']))
             ax.add_artist(rect)
 
-    ax.set_xlim((jobset.df.submission_time.min(), jobset.df.finish_time.max()))
-    ax.set_ylim(jobset.res_bounds)
+    ax.set_xlim(jobset.df['starting_time'].min(), (
+        jobset.df['starting_time'] + jobset.df['execution_time']).max())
+    ax.set_ylim(jobset.res_bounds[0]-1, jobset.res_bounds[1]+1)
     ax.grid(True)
     ax.set_title(title)
 
