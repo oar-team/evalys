@@ -13,18 +13,20 @@ from evalys.jobset import JobSet
 import numpy as np
 import matplotlib.pyplot as plt
 import docopt
+import pandas as pd
+import seaborn as sns
 
 
 def compute_fragmentation(fs):
-    fs["total"] = fs.allocated_processors.apply(
+    fs["nb_resources"] = fs.allocated_processors.apply(
         lambda x: interval_set.total(interval_set.string_to_interval_set(x)))
 
-    area = np.repeat(fs.execution_time, fs["total"])
-    area = fs["total"] * fs["execution_time"]
+    area = np.repeat(fs.execution_time, fs["nb_resources"])
+    # area = pd.Series(np.array(fs["total"] * fs["execution_time"],
+    #                           dtype=np.float64))
 
-    filtred_e = area[
-        lambda x: x > area.quantile(0.15)][
-            lambda x: x < area.quantile(0.85)]
+    # filtred_e = area
+    filtred_e = area[lambda x: x > area.quantile(0.10)]
 
     frag = {}
     frag['max'] = 1 - (filtred_e.max() / filtred_e.sum())
@@ -38,10 +40,13 @@ def compute_fragmentation(fs):
 
 
 def plot_fragmentation(frag, axe, label):
-    frag.hist(bins=20, ax=axe[0], alpha=0.5, label=label)
-    sq = frag.value_counts()
-    ecdf = sq.sort_index().cumsum()
-    ecdf.plot(ax=axe[1], label=label)
+    # frag.hist(bins=20, ax=axe[0], alpha=0.5, label=label)
+    sns.distplot(frag, ax=axe[0], label=label, kde=False, rug=True)
+    axe[0].set_title("Free slots area distribution")
+    val_count = frag.value_counts()
+    cum_sum = val_count.sort_index().cumsum()
+    ecdf = cum_sum / cum_sum[cum_sum.index[-1]]
+    ecdf.plot(ax=axe[1], label=label, title="Free slots area ecdf")
 
 
 def compare_jobsets_fragmentation(files):
@@ -52,7 +57,11 @@ def compare_jobsets_fragmentation(files):
         js = JobSet.from_csv(f)
         fs = js.free_slots()
         frag = compute_fragmentation(fs)
-        plot_fragmentation(frag, axe, f.split("/")[-1:][0])
+        label = f.split("/")[-1:][0]
+        plot_fragmentation(frag, axe, label)
+        fs = fs[lambda x: x.execution_time > 65]
+        sns.jointplot(x="execution_time", y="nb_resources", data=fs,
+                      label=label)
 
     axe[1].grid(True)
     plt.legend(loc="lower right")
@@ -61,4 +70,5 @@ def compare_jobsets_fragmentation(files):
 if __name__ == "__main__":
     # retrieving arguments
     arguments = docopt.docopt(__doc__)
+    sns.set()
     compare_jobsets_fragmentation(arguments['<jobset_csv_files>'])
