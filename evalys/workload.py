@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import re
 import datetime
-from evalys.metrics import compute_load
+from evalys.metrics import compute_load, load_mean
 
 
 class Workload(object):
@@ -254,6 +254,9 @@ class Workload(object):
         '''
         u = self.utilisation
 
+        # convert timestamp to datetime
+        u.index = pd.to_datetime(u['time'] +
+                                 int(self.UnixStartTime), unit='s')
         # leave room to have better view
         plt.margins(x=0.1, y=0.1)
 
@@ -347,10 +350,13 @@ class Workload(object):
             a list of workload of the given periods, with the given
             utilisation, extracted from the this workload.
         '''
-        norm_util = self.utilisation / self.MaxProcs
+        norm_util = self.utilisation.area / self.MaxProcs
 
-        periods = norm_util.resample(
-            str(period_in_hours) + 'H').mean()\
+        # convert timestamp to datetime
+        norm_util.index = pd.to_datetime(norm_util.index +
+                                         int(self.UnixStartTime), unit='s')
+        resampled_df = norm_util.resample(str(period_in_hours) + 'H')
+        periods = resampled_df.apply(load_mean)\
             .loc[lambda x: x >= (utilisation - variation)]\
             .loc[lambda x: x <= (utilisation + variation)]
 
