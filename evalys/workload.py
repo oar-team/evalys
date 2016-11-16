@@ -350,28 +350,49 @@ class Workload(object):
             a list of workload of the given periods, with the given
             utilisation, extracted from the this workload.
         '''
-        norm_util = self.utilisation.area / self.MaxProcs
+        norm_util = self.utilisation
 
         # convert timestamp to datetime
-        norm_util.index = pd.to_datetime(norm_util.index +
-                                         int(self.UnixStartTime), unit='s')
-        resampled_df = norm_util.resample(str(period_in_hours) + 'H')
-        periods = resampled_df.apply(load_mean)\
-            .loc[lambda x: x >= (utilisation - variation)]\
-            .loc[lambda x: x <= (utilisation + variation)]
+        # norm_util.index = pd.to_datetime(norm_util.index +
+        #                                  int(self.UnixStartTime), unit='s')
+        # resampled_df = norm_util.resample(str(period_in_hours) + 'H')
+        # resample the dataframe with the given period
+        time_periods = np.arange(min(norm_util.index),
+                                 max(norm_util.index),
+                                 60 * 60 * period_in_hours)
+        #resampled_df = norm_util.reindex(
+        #    norm_util.index.join(pd.Index(new_index), how="right"),
+        #    method="ffill")
+        mean_df = pd.DataFrame()
+        for index, val in enumerate(time_periods):
+            if index == len(time_periods) - 1 or index == 0:
+                continue
+            begin = val
+            end = time_periods[index + 1]
+
+            mean_df = mean_df.append(
+                {"begin": begin,
+                 "end": end,
+                 "mean_util": load_mean(norm_util,
+                                        begin=begin,
+                                        end=end)},
+                ignore_index=True)
+
+        mean_df["norm_mean_util"] = mean_df.mean_util / self.MaxProcs
+        periods = mean_df.loc[lambda x: x.norm_mean_util >= (utilisation - variation)]\
+            .loc[lambda x: x.norm_mean_util <= (utilisation + variation)]["begin"]
 
         # reindex workload by start time to extract easily
         df = self.df
         df['starting_time'] = \
             self.df['submission_time'] + self.df['waiting_time']
         df = df.sort_values(by='starting_time').set_index(['starting_time'])
-        df.index = pd.to_datetime(df.index + int(self.UnixStartTime), unit='s')
 
         extracted = []
-        for period_begin in periods.index:
+        for period_begin in periods:
             start = df.index.searchsorted(period_begin)
             end = df.index.searchsorted(
-                period_begin + pd.to_timedelta(period_in_hours, unit='H'))
+                period_begin + period_in_hours * 60 * 60)
             # Create a Workload object from extracted dataframe
             wl = Workload(df[start:end].reset_index(drop=True),
                           Conversion="Workload extracted using Evalys: "
@@ -382,8 +403,7 @@ class Workload(object):
                           Note="Period of {} hours with a mean utilisation "
                                "of {}".format(period_in_hours, utilisation),
                           MaxProcs=self.MaxProcs,
-                          UnixStartTime=int(
-                              period_begin.to_datetime().timestamp()))
+                          UnixStartTime=period_begin)
             extracted.append(wl)
 
         return extracted

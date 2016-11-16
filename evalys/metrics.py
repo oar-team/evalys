@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 
 def cumulative_waiting_time(dataframe, start_timestamp=None):
@@ -103,9 +104,6 @@ def load_mean(df, begin=None, end=None):
     elif begin < min_to:
         raise ValueError("computing mean load befor the "
                          "first event ({}) is NOT IMPLEMENTED".format(min_to))
-
-    begin = float(begin)
-    end = float(end)
 
     load_df = _load_insert_element_if_necessary(load_df, begin)
     load_df = _load_insert_element_if_necessary(load_df, end)
