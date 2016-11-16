@@ -156,7 +156,9 @@ class Workload(object):
             setattr(self, key, value)
 
         # Initialise start time
-        if not hasattr(self, "UnixStartTime"):
+        if hasattr(self, "UnixStartTime"):
+            self.UnixStartTime = int(self.UnixStartTime)
+        else:
             self.UnixStartTime = 0
 
         # property initialization
@@ -252,25 +254,40 @@ class Workload(object):
         opt:
             - normalize (bool) : normalize by the number of procs
         '''
-        u = self.utilisation
+        # make the time index a column
+        mean = load_mean(self.utilisation)
+        u = self.utilisation.reset_index()
 
         # convert timestamp to datetime
         u.index = pd.to_datetime(u['time'] +
-                                 int(self.UnixStartTime), unit='s')
+                                 self.UnixStartTime, unit='s')
+
+        # get an axe if not provided
+        if ax is None:
+            ax = plt.gca()
+
         # leave room to have better view
-        plt.margins(x=0.1, y=0.1)
+        ax.margins(x=0.1, y=0.1)
 
         if normalize:
-            u = u / self.MaxProcs
+            u.proc_alloc = u.proc_alloc / self.MaxProcs
+            mean = mean / self.MaxProcs
 
         # plot utilisation
-        u.plot(drawstyle="steps", ax=ax)
+        u.proc_alloc.plot(drawstyle="steps", ax=ax)
 
-        # plot a line for the number of procs
-        if hasattr(self, "MaxProcs"):
-            plt.plot([u.index[0], u.index[-1]],
-                     [self.MaxProcs, self.MaxProcs],
-                     color='k', linestyle='-', linewidth=2, ax=ax)
+        # plot a line for max available area
+        if hasattr(self, "MaxProcs") and not normalize:
+            ax.plot([u.index[0], u.index[-1]],
+                    [self.MaxProcs, self.MaxProcs],
+                    linestyle='-', linewidth=2,
+                    label="Maximum resources ({})".format(self.MaxProcs))
+
+        # plot a line for mean utilisation
+        ax.plot([u.index[0], u.index[-1]],
+                [mean, mean],
+                linestyle='--', linewidth=2,
+                label="Mean resources utilisation ({0:.2f})".format(mean))
 
     def resources_free_time(self):
         '''
@@ -332,7 +349,7 @@ class Workload(object):
             free = free / self.MaxProcs
 
         free.index = pd.to_datetime(free['time'] +
-                                    int(self.UnixStartTime), unit='s')
+                                    self.UnixStartTime, unit='s')
         free.plot()
         # plot a line for the number of procs
         plt.plot([free.index[0], free.index[-1]],
@@ -352,17 +369,10 @@ class Workload(object):
         '''
         norm_util = self.utilisation
 
-        # convert timestamp to datetime
-        # norm_util.index = pd.to_datetime(norm_util.index +
-        #                                  int(self.UnixStartTime), unit='s')
-        # resampled_df = norm_util.resample(str(period_in_hours) + 'H')
         # resample the dataframe with the given period
         time_periods = np.arange(min(norm_util.index),
                                  max(norm_util.index),
                                  60 * 60 * period_in_hours)
-        #resampled_df = norm_util.reindex(
-        #    norm_util.index.join(pd.Index(new_index), how="right"),
-        #    method="ffill")
         mean_df = pd.DataFrame()
         for index, val in enumerate(time_periods):
             if index == len(time_periods) - 1 or index == 0:
@@ -403,7 +413,7 @@ class Workload(object):
                           Note="Period of {} hours with a mean utilisation "
                                "of {}".format(period_in_hours, utilisation),
                           MaxProcs=self.MaxProcs,
-                          UnixStartTime=period_begin)
+                          UnixStartTime=int(period_begin))
             extracted.append(wl)
 
         return extracted
