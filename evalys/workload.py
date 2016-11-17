@@ -152,12 +152,21 @@ class Workload(object):
         for key, value in kwargs.items():
             # cast integer
             if key.startswith('Max'):
-                value = int(value)
-            setattr(self, key, value)
+                try:
+                    value = int(value)
+                    setattr(self, key, value)
+                except ValueError:
+                    print("WARNING: unable to get \"{}\" integer value. Found"
+                          " value: {}".format(key, value))
+            else:
+                setattr(self, key, value)
 
         # Initialise start time
         if hasattr(self, "UnixStartTime"):
-            self.UnixStartTime = int(self.UnixStartTime)
+            try:
+                self.UnixStartTime = int(self.UnixStartTime)
+            except:
+                self.UnixStartTime = 0
         else:
             self.UnixStartTime = 0
 
@@ -389,22 +398,24 @@ class Workload(object):
                 ignore_index=True)
 
         mean_df["norm_mean_util"] = mean_df.mean_util / self.MaxProcs
-        periods = mean_df.loc[lambda x: x.norm_mean_util >= (utilisation - variation)]\
-            .loc[lambda x: x.norm_mean_util <= (utilisation + variation)]["begin"]
+        periods = mean_df.loc[
+            lambda x: x.norm_mean_util >= (utilisation - variation)].loc[
+                lambda x: x.norm_mean_util <= (utilisation + variation)
+            ]["begin"]
 
         # reindex workload by start time to extract easily
-        df = self.df
+        df = self.df.copy()
         df['starting_time'] = \
             self.df['submission_time'] + self.df['waiting_time']
         df = df.sort_values(by='starting_time').set_index(['starting_time'])
 
         extracted = []
         for period_begin in periods:
-            start = df.index.searchsorted(period_begin)
+            begin = df.index.searchsorted(period_begin)
             end = df.index.searchsorted(
-                period_begin + period_in_hours * 60 * 60)
+                period_begin + (period_in_hours * 60 * 60))
             # Create a Workload object from extracted dataframe
-            wl = Workload(df[start:end].reset_index(drop=True),
+            wl = Workload(df[begin:end].reset_index(drop=True),
                           Conversion="Workload extracted using Evalys: "
                                      "https://github.com/oar-team/evalys",
                           Information=self.Information,

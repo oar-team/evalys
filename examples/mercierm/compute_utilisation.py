@@ -1,4 +1,5 @@
 from evalys import workload
+from evalys.metrics import load_mean
 import pandas as pd
 from glob import glob
 import matplotlib.pyplot as plt
@@ -14,16 +15,18 @@ def compute_overall_utilisation():
     res = pd.Series()
     i = 0
     for f in files:
-        wl = workload.Workload.from_csv(f)
+        print('Loading SWF file: {}'.format(f))
         try:
-            norm_util = wl.utilisation / wl.max_procs
-            print('File: {}\nUtil: {}\n'.format(f, norm_util.mean()))
-            res.set_value(i, norm_util.mean())
+            wl = workload.Workload.from_csv(f)
+            norm_util_mean = load_mean(wl.utilisation) / wl.MaxProcs
+            print('Mean Util: {}\n'.format(norm_util_mean))
+            res.set_value(f, norm_util_mean)
             i = i + 1
-        except:
-            print('{} do not contains max proc info'.format(f))
+        except AttributeError as e:
+            print("Unable to compute normalize mean: {}".format(e))
         finally:
-            del wl
+            if wl:
+                del wl
     print('{}'.format(res))
     print('{}'.format(res.mean()))
     print(res.describe())
@@ -38,9 +41,11 @@ def plot_overall_utilisation(ou):
     plt.savefig("overall_util_hist.pdf")
     plt.show()
 
+
 if __name__ == "__main__":
-    try:
+    import os.path
+    if os.path.isfile("overall_utilisation.csv"):
         ou = pd.Series.from_csv("overall_utilisation.csv")
-    except:
+    else:
         ou = compute_overall_utilisation()
     plot_overall_utilisation(ou)
