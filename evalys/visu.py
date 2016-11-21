@@ -5,10 +5,11 @@ import matplotlib
 import matplotlib.patches as mpatch
 from matplotlib import pyplot as plt
 import pandas as pd
-from evalys import metrics
 import random
-
 import colorsys
+
+from evalys import metrics
+from evalys.interval_set import interval_set_to_set, string_to_interval_set
 
 
 # plt.style.use('ggplot')
@@ -87,9 +88,6 @@ def plot_load(jobset, ax, title, labels=True):
 
     need: execution_time, jobID, allocated_processors
     """
-    from evalys.jobset import interval_set_to_set, string_to_interval_set
-    # XXX: find a better way to organize modules to avoid this unnecessary
-    # circular dependency avoidance trick
 
     def _draw_rect(ax, base, width, height, color, label):
         rect = mpatch.Rectangle(base, width, duration, alpha=0.2, color=color)

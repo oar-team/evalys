@@ -268,8 +268,9 @@ class Workload(object):
         u = self.utilisation.reset_index()
 
         # convert timestamp to datetime
-        u.index = pd.to_datetime(u['time'] +
-                                 self.UnixStartTime, unit='s')
+        u.index = pd.to_datetime(u['time'] + self.UnixStartTime,
+                                 unit='s')
+        u.index.tz_localize('UTC').tz_convert(self.TimeZoneString)
 
         # get an axe if not provided
         if ax is None:
@@ -357,8 +358,11 @@ class Workload(object):
         if normalize:
             free = free / self.MaxProcs
 
-        free.index = pd.to_datetime(free['time'] +
-                                    self.UnixStartTime, unit='s')
+        free.index = pd.to_datetime(free['time'] + self.UnixStartTime,
+                                    unit='s', utc=True,
+                                    )
+        free.index.tz_localize('UTC').tz_convert(self.TimeZoneString)
+
         free.plot()
         # plot a line for the number of procs
         plt.plot([free.index[0], free.index[-1]],
@@ -368,7 +372,8 @@ class Workload(object):
     def extract_periods_with_given_utilisation(self,
                                                period_in_hours,
                                                utilisation,
-                                               variation=0.001):
+                                               variation=0.01,
+                                               nb_max=None):
         '''
         This extract from the workload a period (in hours) with a given mean
         utilisation (between 0 and 1).
@@ -410,12 +415,17 @@ class Workload(object):
         df = df.sort_values(by='starting_time').set_index(['starting_time'])
 
         extracted = []
+        # Only take nb_max periods if it is defined
+        if nb_max:
+            periods = periods[:nb_max]
         for period_begin in periods:
             begin = df.index.searchsorted(period_begin)
             end = df.index.searchsorted(
                 period_begin + (period_in_hours * 60 * 60))
             # Create a Workload object from extracted dataframe
-            wl = Workload(df[begin:end].reset_index(drop=True),
+            to_export = df[begin:end].reset_index(drop=True)
+            # TODO export also the running and the queued jobs
+            wl = Workload(to_export,
                           Conversion="Workload extracted using Evalys: "
                                      "https://github.com/oar-team/evalys",
                           Information=self.Information,

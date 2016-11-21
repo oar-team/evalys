@@ -36,6 +36,6 @@ def extract_periods(w, swf_trace):
 
 
 if __name__ == "__main__":
-    swf_trace = "UniLu-Gaia-2014-2"
-    w = workload.Workload.from_csv("../" + swf_trace + ".swf")
+    swf_trace = "HPC2N-2002-2.2-cln"
+    w = workload.Workload.from_csv("./" + swf_trace + ".swf")
     extract_periods(w, swf_trace)

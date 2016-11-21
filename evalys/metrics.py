@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 
 
 def cumulative_waiting_time(dataframe, start_timestamp=None):
@@ -13,12 +12,8 @@ def cumulative_waiting_time(dataframe, start_timestamp=None):
     df_sorted_by_starting_time = df.sort_values(by='starting_time')
 
     wt_cumsum = df_sorted_by_starting_time.waiting_time.cumsum()
-    # convert to real time if start_time
-    if start_timestamp:
-        wt_cumsum.index = pd.to_datetime(
-            df_sorted_by_starting_time['starting_time'])
-    else:
-        wt_cumsum.index = df_sorted_by_starting_time['starting_time']
+    # Sort by starting time
+    wt_cumsum.index = df_sorted_by_starting_time['starting_time']
     return wt_cumsum
 
 

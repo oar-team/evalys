@@ -11,7 +11,7 @@ def compute_overall_utilisation():
     overall utilisation of the clusters.
     Write results to "overall_utilisation.csv" and return it.
     '''
-    files = [f for f in glob('./*.swf')]
+    files = [f for f in glob('./swf_files/*.swf')]
     res = pd.Series()
     i = 0
     for f in files:
