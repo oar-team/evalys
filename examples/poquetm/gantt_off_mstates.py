@@ -44,7 +44,8 @@ def main():
     if args.energyCSV:
         nb_subplots = nb_subplots + 1
     if args.llhCSV:
-        nb_subplots = nb_subplots + 2
+        #nb_subplots = nb_subplots + 2
+        nb_subplots = nb_subplots + 1
 
     fig, ax_list = plt.subplots(nb_subplots, sharex = True, sharey = False)
     if nb_subplots < 2:
@@ -60,9 +61,12 @@ def main():
     ax_id = 2
     if args.energyCSV:
         e = pd.read_csv(args.energyCSV)
-        #e['energy'] = e['energy'].diff(-1)
-        ax_list[ax_id].plot(e['time'], e['energy'])
+        e.dropna(axis=0, how='any', subset=['epower'], inplace=True)
+        e.sort_values(inplace=True, by='time')
+        ax_list[ax_id].plot(e['time'], e['epower'], label='Electrical power (W)', drawstyle="steps-pre")
+        #ax_list[ax_id].scatter(e['time'], e['epower'], label='Electrical power (W)')
         ax_list[ax_id].set_title(args.energyCSV)
+        ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
         ax_id = ax_id + 1
 
     if args.llhCSV:
@@ -70,15 +74,16 @@ def main():
 
         # LLH
         ax_list[ax_id].plot(llh['date'], llh['liquid_load_horizon'], label="Liquid load horizon (s)")
+        ax_list[ax_id].scatter(j.df['submission_time'], j.df['waiting_time'], label="Waiting time (s)")
         ax_list[ax_id].set_title(args.llhCSV)
         ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
         ax_id = ax_id + 1
 
         # Load in queue
-        ax_list[ax_id].plot(llh['date'], llh['load_in_queue'], label="Load in queue (s*r)")
-        ax_list[ax_id].set_title(args.llhCSV)
-        ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        ax_id = ax_id + 1
+        # ax_list[ax_id].plot(llh['date'], llh['load_in_queue'], label="Load in queue (s*r)")
+        # ax_list[ax_id].set_title(args.llhCSV)
+        # ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        # ax_id = ax_id + 1
 
     # Figure outputting
     if args.output is not None:
