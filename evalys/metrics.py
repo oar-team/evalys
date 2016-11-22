@@ -12,12 +12,8 @@ def cumulative_waiting_time(dataframe, start_timestamp=None):
     df_sorted_by_starting_time = df.sort_values(by='starting_time')
 
     wt_cumsum = df_sorted_by_starting_time.waiting_time.cumsum()
-    # convert to real time if start_time
-    if start_timestamp:
-        wt_cumsum.index = pd.to_datetime(
-            df_sorted_by_starting_time['starting_time'])
-    else:
-        wt_cumsum.index = df_sorted_by_starting_time['starting_time']
+    # Sort by starting time
+    wt_cumsum.index = df_sorted_by_starting_time['starting_time']
     return wt_cumsum
 
 
@@ -59,8 +55,55 @@ def compute_load(dataframe, col_begin, col_end, col_cumsum,
         stop_event_df,
         ignore_index=True).sort_values(by='time').reset_index(drop=True)
 
-    # convert timestamp to datetime
-    event_df.index = pd.to_datetime(event_df['time'] +
-                                    int(UnixStartTime), unit='s')
+    # sum the event that happend at the same time and cummulate events
+    load_df = pd.DataFrame(
+        event_df.groupby(event_df['time'])[col_cumsum].sum().cumsum(),
+        columns=["proc_alloc"])
+    load_df["time"] = load_df.index
 
-    return event_df.groupby(event_df.index).sum()[col_cumsum].cumsum()
+    # compute area
+    load_df["area"] = - load_df["time"].diff(-1) * load_df[col_cumsum]
+    del load_df["time"]
+
+    return load_df
+
+
+def _load_insert_element_if_necessary(load_df, at):
+    if len(load_df[load_df.time == at]) == 0:
+        prev_el = load_df[load_df.time <= at].tail(1)
+        new_el = prev_el.copy()
+        next_el = load_df[load_df.time >= at].head(1)
+        new_el.time = at
+        new_el.area = float(new_el.proc_alloc) * float(next_el.time - at)
+        load_df.loc[prev_el.index, "area"] = \
+            float(prev_el.proc_alloc) * float(at - prev_el.time)
+        load_df.loc[len(load_df)] = [
+            float(new_el.time),
+            float(new_el.proc_alloc),
+            float(new_el.area)]
+        load_df = load_df.sort_values(by=["time"])
+    return load_df
+
+
+def load_mean(df, begin=None, end=None):
+    load_df = df.reset_index()
+    max_to = max(load_df.time)
+    if end is None:
+        end = max_to
+    elif end > max_to:
+        raise ValueError("computing mean load after the "
+                         "last event ({}) is NOT IMPLEMENTED".format(max_to))
+    min_to = load_df.time.iloc[0]
+    if begin is None:
+        begin = min_to
+    elif begin < min_to:
+        raise ValueError("computing mean load befor the "
+                         "first event ({}) is NOT IMPLEMENTED".format(min_to))
+
+    load_df = _load_insert_element_if_necessary(load_df, begin)
+    load_df = _load_insert_element_if_necessary(load_df, end)
+
+    u = load_df[load_df.time < end]
+    u = u[begin <= u.time]
+
+    return u.area.sum()/(end - begin)

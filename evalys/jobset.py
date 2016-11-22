@@ -127,20 +127,24 @@ class JobSet(object):
         free_interval_serie = self.free_intervals()
         slots_time = [(free_interval_serie.time[0],
                       [self.res_bounds])]
+        new_slots_time = slots_time
         columns = ['jobID', 'allocated_processors',
                    'starting_time', 'finish_time', 'execution_time',
                    'submission_time']
         free_slots_df = pd.DataFrame(columns=columns)
         prev_free_itvs = [self.res_bounds]
         slots = 0
-
-        for _, curr_row in free_interval_serie.iterrows():
+        for i, curr_row in free_interval_serie.iterrows():
+            if i == 0:
+                continue
             new_slots_time = []
             curr_time = curr_row.time
             taken_resources = difference(prev_free_itvs,
                                          curr_row.proc_alloc)
             freed_resources = difference(curr_row.proc_alloc,
                                          prev_free_itvs)
+            if i == len(free_interval_serie) - 1:
+                taken_resources = [self.res_bounds]
             if taken_resources:
                 # slot ends: store it and update free slot
                 for begin_time, itvs in slots_time:
