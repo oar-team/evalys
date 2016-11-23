@@ -8,67 +8,57 @@ Options:
     -h --help      show this help message and exit.
 """
 
-from evalys import interval_set
 from evalys.jobset import JobSet
-import numpy as np
+from evalys.visu import plot_fragmentation
 import matplotlib.pyplot as plt
 import docopt
 import pandas as pd
 import seaborn as sns
 
 
-def compute_fragmentation(fs):
-    fs["nb_resources"] = fs.allocated_processors.apply(
-        lambda x: interval_set.total(interval_set.string_to_interval_set(x)))
+def fragmentation_from_CCGRID(js, size, p=2):
+    """ NOT WORKING """
+    fs = js.free_resources_gaps()
 
-    area = np.repeat(fs.execution_time, fs["nb_resources"])
-    # area = pd.Series(np.array(fs["total"] * fs["execution_time"],
-    #                           dtype=np.float64))
+    ftotal = 0
+    num = 0
+    for i in range(size):
+        df = fs.nb_resources[lambda x: x >= i]
+        if df.sum() == 0:
+            continue
+        f = 1 - ((df**p).sum() / df.sum()**p)
+        if f != 0:
+            ftotal = ftotal + f
+            num = num + 1
 
-    # filtred_e = area
-    filtred_e = area[lambda x: x > area.quantile(0.10)]
-
-    frag = {}
-    frag['max'] = 1 - (filtred_e.max() / filtred_e.sum())
-    frag['mean'] = 1 - (filtred_e.mean() / filtred_e.sum())
-    frag['median'] = 1 - (filtred_e.median() / filtred_e.sum())
-    frag['q1'] = 1 - (filtred_e.quantile(0.25) / filtred_e.sum())
-    frag['q3'] = 1 - (filtred_e.quantile(0.75) / filtred_e.sum())
-
-    print("fragmentation: {}".format(frag))
-    return filtred_e
-
-
-def plot_fragmentation(frag, axe, label):
-    # frag.hist(bins=20, ax=axe[0], alpha=0.5, label=label)
-    sns.distplot(frag, ax=axe[0], label=label, kde=False, rug=True)
-    axe[0].set_title("Free slots area distribution")
-    val_count = frag.value_counts()
-    cum_sum = val_count.sort_index().cumsum()
-    ecdf = cum_sum / cum_sum[cum_sum.index[-1]]
-    ecdf.plot(ax=axe[1], label=label, title="Free slots area ecdf")
+    return ftotal / num
 
 
 def compare_jobsets_fragmentation(files):
 
-    _, axe = plt.subplots(nrows=2)
+    width = 10
+    height = 10
+    fig, axe = plt.subplots(nrows=3, figsize=(width, height))
 
+    frag_serie = pd.Series()
     for f in files:
-        js = JobSet.from_csv(f)
-        fs = js.free_slots()
-        frag = compute_fragmentation(fs)
+        js = JobSet.from_csv(f, resource_bounds=(0, 239))
+        frag = js.fragmentation()
         label = f.split("/")[-1:][0]
-        plot_fragmentation(frag, axe, label)
-        fs = fs[lambda x: x.execution_time > 65]
-        sns.jointplot(x="execution_time", y="nb_resources", data=fs,
-                      label=label)
+        mean_frag = frag.mean()
+        frag_serie.set_value(label, round(mean_frag, 2))
 
-    axe[1].grid(True)
-    plt.legend(loc="lower right")
-    plt.show()
+        label = label + '(mean frag: {0:.2f})'.format(mean_frag)
+        plot_fragmentation(frag, axe, label)
+
+    axe[0].legend()
+
+    return frag_serie
+
 
 if __name__ == "__main__":
     # retrieving arguments
     arguments = docopt.docopt(__doc__)
     sns.set()
     compare_jobsets_fragmentation(arguments['<jobset_csv_files>'])
+    plt.show()

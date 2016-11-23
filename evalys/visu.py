@@ -5,6 +5,7 @@ import matplotlib
 import matplotlib.patches as mpatch
 from matplotlib import pyplot as plt
 import pandas as pd
+import seaborn
 import random
 import colorsys
 
@@ -277,3 +278,26 @@ def plot_series_comparison(series, axe, title):
                      label=first_serie_name + "<" + second_serie_name)
     axe.grid(True)
     axe.set_title(title)
+
+
+def plot_fragmentation(frag, axe, label):
+    """
+    Plot fragmentation raw data, distribution and ecdf in 3 subplots
+    given in the axe list
+    fragmentation can be optain using fragmentation method
+    """
+    assert len(axe) == 3
+
+    # direct plot
+    frag.plot(ax=axe[0], label=label)
+    axe[0].set_title("Fragmentation over resources")
+
+    # plot distribution
+    seaborn.distplot(frag, ax=axe[1], label=label, kde=False, rug=True)
+    axe[1].set_title("Fragmentation distribution")
+
+    # plot ecdf
+    from statsmodels.distributions.empirical_distribution import ECDF
+    ecdf = ECDF(frag)
+    axe[2].step(ecdf.x, ecdf.y, label=label)
+    axe[2].set_title("Fragmentation ecdf")

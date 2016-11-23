@@ -107,3 +107,15 @@ def load_mean(df, begin=None, end=None):
     u = u[begin <= u.time]
 
     return u.area.sum()/(end - begin)
+
+
+def fragmentation(free_resources_gaps):
+    """
+    input is a resource indexed list where each element is a numpy
+    array of free slots.
+    """
+    f = free_resources_gaps
+    frag = pd.Series()
+    for i, fi in enumerate(f):
+        frag.set_value(i, 1 - (sum(fi**2) / sum(fi)**2))
+    return frag

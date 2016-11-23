@@ -6,6 +6,7 @@ from evalys.visu import plot_gantt
 from evalys.interval_set import \
         union, difference, intersection, string_to_interval_set, \
         interval_set_to_string, total
+from evalys import metrics
 
 
 class JobSet(object):
@@ -24,7 +25,7 @@ class JobSet(object):
         # strinf representation
         1-2 5 10-50
     '''
-    def __init__(self, df):
+    def __init__(self, df, resource_bounds=None):
         self.res_set = {}
         self.df = df
 
@@ -34,9 +35,12 @@ class JobSet(object):
             self.res_set[row['jobID']] = string_to_interval_set(
                 str(raw_res_str))
 
-        self.res_bounds = (
-            min([b for x in self.res_set.values() for (b, e) in x]),
-            max([e for x in self.res_set.values() for (b, e) in x]))
+        if resource_bounds:
+            self.res_bounds = resource_bounds
+        else:
+            self.res_bounds = (
+                min([b for x in self.res_set.values() for (b, e) in x]),
+                max([e for x in self.res_set.values() for (b, e) in x]))
 
     __converters = {
         'jobID': str,
@@ -57,9 +61,9 @@ class JobSet(object):
                'allocated_processors']
 
     @classmethod
-    def from_csv(cls, filename):
+    def from_csv(cls, filename, resource_bounds=None):
         df = pd.read_csv(filename, converters=cls.__converters)
-        return cls(df)
+        return cls(df, resource_bounds=resource_bounds)
 
     def gantt(self, ax, title):
         plot_gantt(self, ax, title)
@@ -177,3 +181,32 @@ class JobSet(object):
             # clean slots_free
             slots_time = new_slots_time
         return free_slots_df
+
+    def fragmentation(self):
+        return metrics.fragmentation(self.free_resources_gaps())
+
+    def free_resources_gaps(self):
+        """
+        Return a resource indexed list where each element is a numpy
+        array of free slots.
+        """
+        js = self
+        fs = js.free_slots()
+        free_resources_gaps = []
+        for res in range(js.res_bounds[0], js.res_bounds[1] + 1):
+            free_resources_gaps.append([])
+
+        def get_free_slots_by_resources(x):
+            for res in range(js.res_bounds[0], js.res_bounds[1] + 1):
+                if intersection(
+                        string_to_interval_set(x.allocated_processors),
+                        [(res, res)]):
+                    free_resources_gaps[res].append(x.execution_time)
+
+        # compute resource gaps
+        fs.apply(get_free_slots_by_resources, axis=1)
+        # format each gap list in numpy array
+        for i, fi in enumerate(free_resources_gaps):
+            free_resources_gaps[i] = np.asarray(fi)
+
+        return free_resources_gaps
