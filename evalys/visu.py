@@ -4,6 +4,7 @@ from __future__ import unicode_literals, print_function
 import matplotlib
 import matplotlib.patches as mpatch
 from matplotlib import pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn
 import random
@@ -62,9 +63,39 @@ def plot_pstates(pstates, x_horizon, ax, off_pstates=[]):
                 (y0, y1) = machine_interval
                 (b, e) = (job['begin'], min(job['end'], x_horizon))
                 rect = mpatch.Rectangle((b, y0), e - b, y1 - y0 + 0.9,
-                                        color=(0, 0, 0))
+                                        color=(0, 0, 0), alpha=0.4)
                 ax.add_artist(rect)
 
+def plot_mstates(mstates_df, ax, title=None, palette=None):
+    # Parameter handling
+    if palette == None:
+        # Colorblind palette
+        palette = ["#000000", "#66c2a5", "#fc8d62", "#8da0cb", "#000000"]
+
+    stack_order = ['nb_sleeping', 'nb_switching_on', 'nb_switching_off',
+                   'nb_idle', 'nb_computing']
+
+    alphas = [0.4, 1, 1, 1, 0.1]
+
+    assert(len(palette) == len(stack_order)), \
+        "Palette should be of size {}".format(len(stack_order))
+
+    # Computing temporary date to compute the stacked area
+    y = np.row_stack(tuple([mstates_df[x] for x in stack_order]))
+    y = np.cumsum(y, axis=0)
+
+    # Plotting
+    ax.fill_between(mstates_df['time'], 0, y[0,:], facecolor=palette[0],
+                    alpha=alphas[0], step='post', label=stack_order[0])
+
+    for index, value in enumerate(stack_order[1:]):
+        ax.fill_between(mstates_df['time'], y[index,:], y[index+1,:],
+                        facecolor=palette[index+1], alpha=alphas[index+1],
+                        step='post',
+                        label=stack_order[index+1])
+
+    if title != None:
+        ax.set_title(title)
 
 def plot_gantt_pstates(jobset, pstates, ax, title,
                        labels=True, off_pstates=[]):

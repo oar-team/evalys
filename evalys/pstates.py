@@ -8,7 +8,9 @@ class PowerStatesChanges(object):
     def __init__(self, filename):
         df = pd.read_csv(filename)
 
-        assert('time' in df), "Invalid input file: should contain a 'time' column"
+        for col_name in ['time', 'new_pstate', 'machine_id']:
+            assert(col_name in df), "Invalid input file: should contain a '{}' "\
+                                    "column".format(col_name)
         assert(df['time'].count() > 0), "Invalid input file: should contain at least 1 row"
 
         init = df.loc[df['time'] == 0]
