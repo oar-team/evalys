@@ -299,54 +299,6 @@ class Workload(object):
                 linestyle='--', linewidth=2,
                 label="Mean resources utilisation ({0:.2f})".format(mean))
 
-    def resources_free_time(self):
-        '''
-        go through the utilisation series to find resources that are free
-        for a certaine amount of time
-        '''
-
-        free = self.MaxProcs - self.utilisation
-        # normalize by max procs
-        free = free / self.MaxProcs
-
-        # Init data structure
-        free_ratio = range(1, 10)
-        free_slots_arrays = {}
-        for ratio in free_ratio:
-            free_slots_arrays[ratio] = []
-        resource_used = np.zeros(9, dtype=bool)
-
-        for time, value in free.iteritems():
-            for ratio, i in zip(free_ratio, range(len(resource_used))):
-                # if state free > used
-                if not resource_used[i] and value <= ratio/10:
-                    resource_used[i] = True
-                    free_slots_arrays[ratio].append(time)
-                # if state used > free
-                if resource_used[i] and value > ratio/10:
-                    resource_used[i] = False
-                    begin_time_slot = free_slots_arrays[ratio][-1]
-                    slot = time - begin_time_slot
-                    slot_sec = (slot.microseconds + (slot.seconds +
-                                                     slot.days * 24 * 3600)
-                                * 10**6) / 10**6
-                    free_slots_arrays[ratio][-1] = slot_sec
-        return free_slots_arrays
-
-    def resources_free_time_plot(self):
-
-        free_slots_arrays = self.resources_free_time()
-        fig, axes = plt.subplots(nrows=len(free_slots_arrays), ncols=1,
-                                 sharex=True)
-        # generate histogram
-        i = 0
-        for ratio, array in self.resources_free_time().items():
-            serie = pd.Series(array)
-            serie.plot(kind='hist',
-                       ax=axes[i],
-                       title="free resources {}%".format(ratio*10))
-            i = i + 1
-
     def plot_free_resources(self, normalize=False):
         '''
         Plots the number of free resources against time
