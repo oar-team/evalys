@@ -35,15 +35,19 @@ def annotate(ax, rect, annot):
                 fontsize='small', ha='center', va='center')
 
 
-def plot_gantt(jobset, ax, title, labels=True):
+def plot_gantt(jobset, ax, title, labels=True, palette=None, alpha=0.2):
+    # Palette generation if needed
+    if palette == None:
+        palette = generate_color_set(16)
+    assert(len(palette) > 0)
+
     for i, job in jobset.df.iterrows():
-        RGB_tuples = generate_color_set(16)
-        col = RGB_tuples[i % len(RGB_tuples)]
+        col = palette[i % len(palette)]
         duration = job['execution_time']
         for itv in jobset.res_set[job['jobID']]:
             (y0, y1) = itv
             rect = mpatch.Rectangle((job['starting_time'], y0), duration,
-                                    y1 - y0 + 0.9, alpha=0.2, color=col)
+                                    y1 - y0 + 0.9, alpha=alpha, color=col)
             if labels:
                 annotate(ax, rect, str(job['jobID']))
             ax.add_artist(rect)
@@ -55,38 +59,65 @@ def plot_gantt(jobset, ax, title, labels=True):
     ax.set_title(title)
 
 
-def plot_pstates(pstates, x_horizon, ax, off_pstates=[]):
+def plot_pstates(pstates, x_horizon, ax, palette=None,
+                 off_pstates=set(), son_pstates=set(), soff_pstates=set()):
+    # palette generation if needed
+    if palette == None:
+        palette = ["#000000", "#56ae6c", "#ba495b"]
+    assert(len(palette) >= 3)
+    alphas = [0.6, 1, 1]
+
+    interesting_pstates = off_pstates | son_pstates | soff_pstates
+
     for _, job in pstates.pseudo_jobs.iterrows():
-        if job['pstate'] in off_pstates:
+        if job['pstate'] in interesting_pstates:
+            if job['pstate'] in off_pstates:
+                col_id = 0
+            elif job['pstate'] in son_pstates:
+                col_id = 1
+            elif job['pstate'] in soff_pstates:
+                col_id = 2
+
+            color = palette[col_id]
+            alpha = alphas[col_id]
+
             interval_list = pstates.intervals[job['interval_id']]
             for machine_interval in interval_list:
                 (y0, y1) = machine_interval
                 (b, e) = (job['begin'], min(job['end'], x_horizon))
                 rect = mpatch.Rectangle((b, y0), e - b, y1 - y0 + 0.9,
-                                        color=(0, 0, 0), alpha=0.4)
+                                        color=color, alpha=alpha)
                 ax.add_artist(rect)
 
-def plot_mstates(mstates_df, ax, title=None, palette=None):
+def plot_mstates(mstates_df, ax, title=None, palette=None, reverse=True):
     # Parameter handling
     if palette == None:
         # Colorblind palette
-        palette = ["#000000", "#66c2a5", "#fc8d62", "#8da0cb", "#000000"]
+        palette = ["#000000", "#56ae6c", "#ba495b", "#000000", "#8960b3"]
 
     stack_order = ['nb_sleeping', 'nb_switching_on', 'nb_switching_off',
                    'nb_idle', 'nb_computing']
 
-    alphas = [0.4, 1, 1, 1, 0.1]
+    alphas = [0.6, 1, 1, 0, 0.3]
 
     assert(len(palette) == len(stack_order)), \
         "Palette should be of size {}".format(len(stack_order))
+
+    # Should the display order be reversed?
+    if reverse:
+        palette = palette[::-1]
+        stack_order = stack_order[::-1]
+        alphas = alphas[::-1]
 
     # Computing temporary date to compute the stacked area
     y = np.row_stack(tuple([mstates_df[x] for x in stack_order]))
     y = np.cumsum(y, axis=0)
 
     # Plotting
-    ax.fill_between(mstates_df['time'], 0, y[0,:], facecolor=palette[0],
-                    alpha=alphas[0], step='post', label=stack_order[0])
+    first_i = 0
+    ax.fill_between(mstates_df['time'], 0, y[first_i,:],
+                    facecolor=palette[first_i], alpha=alphas[first_i],
+                    step='post', label=stack_order[first_i])
 
     for index, value in enumerate(stack_order[1:]):
         ax.fill_between(mstates_df['time'], y[index,:], y[index+1,:],
@@ -97,10 +128,10 @@ def plot_mstates(mstates_df, ax, title=None, palette=None):
     if title != None:
         ax.set_title(title)
 
-def plot_gantt_pstates(jobset, pstates, ax, title,
-                       labels=True, off_pstates=[]):
+def plot_gantt_pstates(jobset, pstates, ax, title, labels=True,
+                       off_pstates=set(), son_pstates=set(), soff_pstates=set()):
 
-    plot_gantt(jobset, ax, title, labels)
+    plot_gantt(jobset, ax, title, labels, palette=["#8960b3"], alpha=0.3)
 
     fpb = pstates.pseudo_jobs.loc[pstates.pseudo_jobs['end'] < float('inf')]
 
@@ -111,7 +142,10 @@ def plot_gantt_pstates(jobset, pstates, ax, title,
     ax.grid(True)
     ax.set_title(title)
 
-    plot_pstates(pstates, ax.get_xlim()[1], ax, off_pstates)
+    plot_pstates(pstates, ax.get_xlim()[1], ax,
+                 off_pstates=off_pstates,
+                 son_pstates=son_pstates,
+                 soff_pstates=soff_pstates)
 
 
 def plot_load(jobset, ax, title, labels=True):

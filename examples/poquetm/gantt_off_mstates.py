@@ -25,8 +25,12 @@ def main():
                         help='The name of the CSV file which contains energy consumption information')
     parser.add_argument('--llhCSV', '-l',
                         help='The name of the CSV file which contains LLH information')
-    parser.add_argument('pstatesOFF', nargs='+',
+    parser.add_argument('--off', nargs='+',
                         help='The power states which correspond to OFF machine states')
+    parser.add_argument('--switchon', nargs='+',
+                        help='The power states which correspond to a switching ON machine state')
+    parser.add_argument('--switchoff', nargs='+',
+                        help='The power states which correspond to switching OFF machine state')
     parser.add_argument('--output', '-o',
                         help='The output file (format depending on the given extension, pdf is RECOMMENDED). For example: figure.pdf')
 
@@ -37,7 +41,20 @@ def main():
     c = PowerStatesChanges(args.pstatesCSV)
     m = MachineStatesChanges(args.mstatesCSV)
 
-    off_pstates = [int(x) for x in args.pstatesOFF]
+    off_pstates = set()
+    son_pstates = set()
+    soff_pstates = set()
+
+    if args.off:
+        off_pstates = set([int(x) for x in args.off])
+    if args.switchon:
+        son_pstates = set([int(x) for x in args.switchon])
+    if args.switchoff:
+        soff_pstates = set([int(x) for x in args.switchoff])
+
+    assert((off_pstates & son_pstates) == set()), "pstate collision"
+    assert((off_pstates & soff_pstates) == set()), "pstate collision"
+    assert((son_pstates & soff_pstates) == set()), "pstate collision"
 
     # Figure creation
     nb_subplots = 2
@@ -53,7 +70,9 @@ def main():
 
     # Plotting
     plot_gantt_pstates(j, c, ax_list[0], str(args.jobsCSV), labels=False,
-                       off_pstates = off_pstates)
+                       off_pstates = off_pstates,
+                       son_pstates = son_pstates,
+                       soff_pstates = soff_pstates)
 
     plot_mstates(m.df, ax_list[1], title=args.mstatesCSV)
     ax_list[1].legend(loc='center left', bbox_to_anchor=(1, 0.5))
@@ -63,7 +82,7 @@ def main():
         e = pd.read_csv(args.energyCSV)
         e.dropna(axis=0, how='any', subset=['epower'], inplace=True)
         e.sort_values(inplace=True, by='time')
-        ax_list[ax_id].plot(e['time'], e['epower'], label='Electrical power (W)', drawstyle="steps-pre")
+        ax_list[ax_id].plot(e['time'], e['epower'], label='Power (W)', drawstyle="steps-pre")
         #ax_list[ax_id].scatter(e['time'], e['epower'], label='Electrical power (W)')
         ax_list[ax_id].set_title(args.energyCSV)
         ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
