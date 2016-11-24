@@ -358,25 +358,26 @@ class Workload(object):
         periods = mean_df.loc[
             lambda x: x.norm_mean_util >= (utilisation - variation)].loc[
                 lambda x: x.norm_mean_util <= (utilisation + variation)
-            ]["begin"]
+            ]
 
-        # reindex workload by start time to extract easily
-        df = self.df.copy()
-        df['starting_time'] = \
-            self.df['submission_time'] + self.df['waiting_time']
-        df = df.sort_values(by='starting_time').set_index(['starting_time'])
-
-        extracted = []
         # Only take nb_max periods if it is defined
         if nb_max:
             periods = periods[:nb_max]
-        for period_begin in periods:
-            begin = df.index.searchsorted(period_begin)
-            end = df.index.searchsorted(
-                period_begin + (period_in_hours * 60 * 60))
-            # Create a Workload object from extracted dataframe
-            to_export = df[begin:end].reset_index(drop=True)
-            # TODO export also the running and the queued jobs
+
+    def extract(self, periods):
+        """ Extract workload periods from the given workload dataframe.
+
+        For example:
+        >>> w = Workload.from_csv("../examples/UniLu-Gaia-2014-2.swf")
+        >>> periods = pd.DataFrame([{"begin": 0, "end": 10000},
+        >>>                         {"begin": 10000, "end": 20000}])
+        >>> w.extract(periods)
+        """
+
+        extracted = []
+
+        def do_extract(period):
+            to_export = cut_workload(self.df, period.begin, period.end)
             wl = Workload(to_export,
                           Conversion="Workload extracted using Evalys: "
                                      "https://github.com/oar-team/evalys",
@@ -388,8 +389,12 @@ class Workload(object):
                           MaxProcs=self.MaxProcs,
                           UnixStartTime=int(period_begin))
             extracted.append(wl)
-
+    
+        periods.apply(extract)
         return extracted
+
+
+
 
     @property
     def arriving_each_day(self):
