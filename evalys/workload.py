@@ -189,7 +189,7 @@ class Workload(object):
                          header=0, delim_whitespace=True)
         # sanitize trace
         # - remove job checkpoint information (job status != 0 or 1)
-        df = df[lambda x: x['status'] <= 1]
+        df = df[df['status'] <= 1]
 
         # process header
         header_file = open(filename, 'r')
