@@ -22,7 +22,7 @@ def compute_load(dataframe, col_begin, col_end, col_cumsum,
     # Avoid side effect
     df = pd.DataFrame.copy(dataframe)
     df['starting_time'] = df['submission_time'] + df['waiting_time']
-    df['stop'] = df['starting_time'] + df['execution_time']
+    df['finish_time'] = df['starting_time'] + df['execution_time']
 
     df = df.sort_values(by=col_begin)
 
@@ -30,8 +30,8 @@ def compute_load(dataframe, col_begin, col_end, col_cumsum,
     # - still running jobs (runtime = -1)
     # - not scheduled jobs (wait = -1)
     # - no procs allocated (proc_alloc = -1)
-    max_time = df['stop'].max() + 1000
-    df.ix[df['execution_time'] == -1, 'stop'] = max_time
+    max_time = df['finish_time'].max() + 1000
+    df.ix[df['execution_time'] == -1, 'finish_time'] = max_time
     df.ix[df['execution_time'] == -1, 'starting_time'] = max_time
     df = df[df['proc_alloc'] > 0]
 
@@ -58,7 +58,7 @@ def compute_load(dataframe, col_begin, col_end, col_cumsum,
     # sum the event that happend at the same time and cummulate events
     load_df = pd.DataFrame(
         event_df.groupby(event_df['time'])[col_cumsum].sum().cumsum(),
-        columns=["proc_alloc"])
+        columns=[col_cumsum])
     load_df["time"] = load_df.index
 
     # compute area
