@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import re
 import datetime
 from evalys.metrics import compute_load, load_mean
+from evalys.utils import cut_workload
 
 
 class Workload(object):
@@ -253,11 +254,13 @@ class Workload(object):
         if self._utilisation is not None:
             return self._utilisation
 
-        self._utilisation = compute_load(self.df, 'starting_time', 'stop',
+        self._utilisation = compute_load(self.df,
+                                         'starting_time',
+                                         'finish_time',
                                          'proc_alloc', self.UnixStartTime)
         return self._utilisation
 
-    def plot_utilisation(self, ax=None, normalize=False):
+    def plot_utilisation(self, ax=None, normalize=False, time_scale=False):
         '''
         Plots the number of used resources against time
         opt:
@@ -267,10 +270,11 @@ class Workload(object):
         mean = load_mean(self.utilisation)
         u = self.utilisation.reset_index()
 
-        # convert timestamp to datetime
-        u.index = pd.to_datetime(u['time'] + self.UnixStartTime,
-                                 unit='s')
-        u.index.tz_localize('UTC').tz_convert(self.TimeZoneString)
+        if time_scale:
+            # convert timestamp to datetime
+            u.index = pd.to_datetime(u['time'] + self.UnixStartTime,
+                                     unit='s')
+            u.index.tz_localize('UTC').tz_convert(self.TimeZoneString)
 
         # get an axe if not provided
         if ax is None:
@@ -299,7 +303,7 @@ class Workload(object):
                 linestyle='--', linewidth=2,
                 label="Mean resources utilisation ({0:.2f})".format(mean))
 
-    def plot_free_resources(self, normalize=False):
+    def plot_free_resources(self, normalize=False, time_scale=False):
         '''
         Plots the number of free resources against time
         opt:
@@ -310,10 +314,10 @@ class Workload(object):
         if normalize:
             free = free / self.MaxProcs
 
-        free.index = pd.to_datetime(free['time'] + self.UnixStartTime,
-                                    unit='s', utc=True,
-                                    )
-        free.index.tz_localize('UTC').tz_convert(self.TimeZoneString)
+        if time_scale:
+            free.index = pd.to_datetime(free['time'] + self.UnixStartTime,
+                                        unit='s', utc=True)
+            free.index.tz_localize('UTC').tz_convert(self.TimeZoneString)
 
         free.plot()
         # plot a line for the number of procs
@@ -364,13 +368,21 @@ class Workload(object):
         if nb_max:
             periods = periods[:nb_max]
 
-    def extract(self, periods):
+        notes = ("Period of {} hours with a mean utilisation "
+                 "of {}".format(period_in_hours, utilisation))
+        return self.extract(periods, notes)
+
+    def extract(self, periods, notes=""):
         """ Extract workload periods from the given workload dataframe.
+        Returns a list of extracted Workloads. Some notes can be added to
+        the extracted workload. It will be stored in Notes attributs and
+        it will appear in the SWF header if you extract it to a file with
+        to_csv().
 
         For example:
         >>> w = Workload.from_csv("../examples/UniLu-Gaia-2014-2.swf")
-        >>> periods = pd.DataFrame([{"begin": 0, "end": 10000},
-        >>>                         {"begin": 10000, "end": 20000}])
+        >>> periods = pd.DataFrame([{"begin": 200000, "end": 400000},
+        >>>                         {"begin": 400000, "end": 600000}])
         >>> w.extract(periods)
         """
 
@@ -384,17 +396,13 @@ class Workload(object):
                           Information=self.Information,
                           Computer=self.Computer,
                           Installation=self.Installation,
-                          Note="Period of {} hours with a mean utilisation "
-                               "of {}".format(period_in_hours, utilisation),
+                          Note=notes,
                           MaxProcs=self.MaxProcs,
-                          UnixStartTime=int(period_begin))
+                          UnixStartTime=int(period.begin))
             extracted.append(wl)
-    
-        periods.apply(extract)
+
+        periods.apply(do_extract, axis=1)
         return extracted
-
-
-
 
     @property
     def arriving_each_day(self):

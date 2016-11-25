@@ -35,11 +35,16 @@ def annotate(ax, rect, annot):
                 fontsize='small', ha='center', va='center')
 
 
-def plot_gantt(jobset, ax, title, labels=True, palette=None, alpha=0.2):
+def plot_gantt(jobset, ax=None, title="Gantt chart",
+               labels=True, palette=None, alpha=0.2):
     # Palette generation if needed
-    if palette == None:
+    if palette is None:
         palette = generate_color_set(16)
     assert(len(palette) > 0)
+
+    # Get current axe to plot
+    if ax is None:
+        ax = plt.gca()
 
     for i, job in jobset.df.iterrows():
         col = palette[i % len(palette)]
@@ -59,13 +64,17 @@ def plot_gantt(jobset, ax, title, labels=True, palette=None, alpha=0.2):
     ax.set_title(title)
 
 
-def plot_pstates(pstates, x_horizon, ax, palette=None,
+def plot_pstates(pstates, x_horizon, ax=None, palette=None,
                  off_pstates=set(), son_pstates=set(), soff_pstates=set()):
     # palette generation if needed
-    if palette == None:
+    if palette is None:
         palette = ["#000000", "#56ae6c", "#ba495b"]
     assert(len(palette) >= 3)
     alphas = [0.6, 1, 1]
+
+    # Get current axe to plot
+    if ax is None:
+        ax = plt.gca()
 
     interesting_pstates = off_pstates | son_pstates | soff_pstates
 
@@ -89,9 +98,10 @@ def plot_pstates(pstates, x_horizon, ax, palette=None,
                                         color=color, alpha=alpha)
                 ax.add_artist(rect)
 
-def plot_mstates(mstates_df, ax, title=None, palette=None, reverse=True):
+
+def plot_mstates(mstates_df, ax=None, title=None, palette=None, reverse=True):
     # Parameter handling
-    if palette == None:
+    if palette is None:
         # Colorblind palette
         palette = ["#000000", "#56ae6c", "#ba495b", "#000000", "#8960b3"]
 
@@ -102,6 +112,10 @@ def plot_mstates(mstates_df, ax, title=None, palette=None, reverse=True):
 
     assert(len(palette) == len(stack_order)), \
         "Palette should be of size {}".format(len(stack_order))
+
+    # Get current axe to plot
+    if ax is None:
+        ax = plt.gca()
 
     # Should the display order be reversed?
     if reverse:
@@ -115,21 +129,23 @@ def plot_mstates(mstates_df, ax, title=None, palette=None, reverse=True):
 
     # Plotting
     first_i = 0
-    ax.fill_between(mstates_df['time'], 0, y[first_i,:],
+    ax.fill_between(mstates_df['time'], 0, y[first_i, :],
                     facecolor=palette[first_i], alpha=alphas[first_i],
                     step='post', label=stack_order[first_i])
 
     for index, value in enumerate(stack_order[1:]):
-        ax.fill_between(mstates_df['time'], y[index,:], y[index+1,:],
+        ax.fill_between(mstates_df['time'], y[index, :], y[index+1, :],
                         facecolor=palette[index+1], alpha=alphas[index+1],
                         step='post',
                         label=stack_order[index+1])
 
-    if title != None:
+    if title is not None:
         ax.set_title(title)
 
+
 def plot_gantt_pstates(jobset, pstates, ax, title, labels=True,
-                       off_pstates=set(), son_pstates=set(), soff_pstates=set()):
+                       off_pstates=set(), son_pstates=set(),
+                       soff_pstates=set()):
 
     plot_gantt(jobset, ax, title, labels, palette=["#8960b3"], alpha=0.3)
 
@@ -148,12 +164,16 @@ def plot_gantt_pstates(jobset, pstates, ax, title, labels=True,
                  soff_pstates=soff_pstates)
 
 
-def plot_load(jobset, ax, title, labels=True):
+def plot_load(jobset, ax=None, title="Load", labels=True):
     """
     Display the impact of each job on the load of each processor.
 
     need: execution_time, jobID, allocated_processors
     """
+
+    # Get current axe to plot
+    if ax is None:
+        ax = plt.gca()
 
     def _draw_rect(ax, base, width, height, color, label):
         rect = mpatch.Rectangle(base, width, duration, alpha=0.2, color=color)
@@ -202,11 +222,15 @@ def plot_load(jobset, ax, title, labels=True):
     ax.set_ylabel('load / s')
 
 
-def plot_series(series_type, jobsets, ax_series):
+def plot_series(series_type, jobsets, ax=None, time_scale=False):
     '''
     Plot one or several time series about provided jobsets on the given ax
     series_type can be any value present in available_series.
     '''
+    # Get current axe to plot
+    if ax is None:
+        ax = plt.gca()
+
     if series_type not in available_series:
         raise AttributeError(
             "The gieven attribute should be one of the folowing:"
@@ -218,25 +242,30 @@ def plot_series(series_type, jobsets, ax_series):
             jobset = jobsets[jobset_name]
             #  create a serie
             series[jobset_name] = metrics.cumulative_waiting_time(jobset.df)
-            series[jobset_name].index = pd.to_datetime(
-                jobset.df['submission_time'] + jobset.df['waiting_time'],
-                unit='s')
+            if time_scale:
+                series[jobset_name].index = pd.to_datetime(
+                    jobset.df['submission_time'] + jobset.df['waiting_time'],
+                    unit='s')
         # plot series
         for serie_name, serie in series.items():
-            serie.plot(ax=ax_series, label=serie_name, drawstyle="steps")
+            serie.plot(ax=ax, label=serie_name, drawstyle="steps")
     else:
         raise RuntimeError('The serie \"{}\" is not implemeted yet')
 
     # Manage legend
-    ax_series.legend(loc='upper left')
-    ax_series.set_title(series_type)
-    ax_series.grid(True)
+    ax.legend(loc='upper left')
+    ax.set_title(series_type)
+    ax.grid(True)
 
 
-def plot_gantt_general_shape(jobset_list, ax):
+def plot_gantt_general_shape(jobset_list, ax=None):
     '''
     Draw a general gantt shape of multiple jobsets on one plot for comparison
     '''
+    # Get current axe to plot
+    if ax is None:
+        ax = plt.gca()
+
     color_index = 0
     RGB_tuples = generate_color_set(len(jobset_list))
     legend_rect = []
@@ -270,8 +299,13 @@ def plot_gantt_general_shape(jobset_list, ax):
     ax.set_title("General shape")
 
 
-def plot_job_details(dataframe, size, ax, title):
+def plot_job_details(dataframe, size, ax=None, title="Job details",
+                     time_scale=False):
     # TODO manage also the Jobset case
+    # Get current axe to plot
+    if ax is None:
+        ax = plt.gca()
+
     # Avoid side effect
     df = pd.DataFrame.copy(dataframe)
     df = df.sort_values(by='jobID')
@@ -286,9 +320,10 @@ def plot_job_details(dataframe, size, ax, title):
     lines = [['submission_time', 'starting_time', 'blue', 0, size],
              ['starting_time', 'finish_time', 'green', size, size * 2]]
 
-    df['submission_time'] = pd.to_datetime(df['submission_time'], unit='s')
-    df['starting_time'] = pd.to_datetime(df['starting_time'], unit='s')
-    df['finish_time'] = pd.to_datetime(df['finish_time'], unit='s')
+    if time_scale:
+        df['submission_time'] = pd.to_datetime(df['submission_time'], unit='s')
+        df['starting_time'] = pd.to_datetime(df['starting_time'], unit='s')
+        df['finish_time'] = pd.to_datetime(df['finish_time'], unit='s')
 
     # select the axe
     plt.sca(ax)
@@ -310,59 +345,68 @@ def plot_job_details(dataframe, size, ax, title):
     # plot one point per serie
     for serie, color, marker, treshold in to_plot:
         x = df[serie]
-        # Convert date to matplotlib float representation
-        x = x.dt.to_pydatetime()
+        if time_scale:
+            # Convert date to matplotlib float representation
+            x = x.dt.to_pydatetime()
         y = new_proc_alloc + treshold
         plt.scatter(x, y, c=color, marker=marker,
                     s=60, label=serie, alpha=0.5)
 
     ax.grid(True)
+    ax.legend()
     ax.set_title(title)
 
 
-def plot_series_comparison(series, axe, title):
+def plot_series_comparison(series, ax=None, title="Series comparison"):
     ''' Plot and compare two serie in post step '''
     assert len(series) == 2
+    # Get current axe to plot
+    if ax is None:
+        ax = plt.gca()
 
     first_serie_name = list(series.keys())[0]
     first_serie = list(series.values())[0]
-    first_serie.plot(drawstyle="steps-post", ax=axe, label=first_serie_name)
+    first_serie.plot(drawstyle="steps-post", ax=ax, label=first_serie_name)
 
     second_serie_name = list(series.keys())[1]
     second_serie = list(series.values())[1]
-    second_serie.plot(drawstyle="steps-post", ax=axe, label=second_serie_name)
+    second_serie.plot(drawstyle="steps-post", ax=ax, label=second_serie_name)
 
     df = pd.DataFrame(series).fillna(method='ffill')
     y1 = df[first_serie_name]
     y2 = df[second_serie_name]
-    axe.fill_between(df.index, y1, y2, where=y2 < y1, facecolor='red',
-                     step='post', alpha=0.5,
-                     label=first_serie_name + ">" + second_serie_name)
-    axe.fill_between(df.index, y1, y2, where=y2 > y1, facecolor='green',
-                     step='post', alpha=0.5,
-                     label=first_serie_name + "<" + second_serie_name)
-    axe.grid(True)
-    axe.set_title(title)
+    ax.fill_between(df.index, y1, y2, where=y2 < y1, facecolor='red',
+                    step='post', alpha=0.5,
+                    label=first_serie_name + ">" + second_serie_name)
+    ax.fill_between(df.index, y1, y2, where=y2 > y1, facecolor='green',
+                    step='post', alpha=0.5,
+                    label=first_serie_name + "<" + second_serie_name)
+    ax.grid(True)
+    ax.set_title(title)
 
 
-def plot_fragmentation(frag, axe, label):
+def plot_fragmentation(frag, ax=None, label="Fragmentation"):
     """
     Plot fragmentation raw data, distribution and ecdf in 3 subplots
-    given in the axe list
+    given in the ax list
     fragmentation can be optain using fragmentation method
     """
-    assert len(axe) == 3
+    # Get current axe to plot
+    if ax is None:
+        ax = plt.subplots(nrows=3)
+
+    assert len(ax) == 3
 
     # direct plot
-    frag.plot(ax=axe[0], label=label)
-    axe[0].set_title("Fragmentation over resources")
+    frag.plot(ax=ax[0], label=label)
+    ax[0].set_title("Fragmentation over resources")
 
     # plot distribution
-    seaborn.distplot(frag, ax=axe[1], label=label, kde=False, rug=True)
-    axe[1].set_title("Fragmentation distribution")
+    seaborn.distplot(frag, ax=ax[1], label=label, kde=False, rug=True)
+    ax[1].set_title("Fragmentation distribution")
 
     # plot ecdf
     from statsmodels.distributions.empirical_distribution import ECDF
     ecdf = ECDF(frag)
-    axe[2].step(ecdf.x, ecdf.y, label=label)
-    axe[2].set_title("Fragmentation ecdf")
+    ax[2].step(ecdf.x, ecdf.y, label=label)
+    ax[2].set_title("Fragmentation ecdf")

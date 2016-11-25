@@ -1,8 +1,8 @@
 def cut_workload(workload_df, begin_time, end_time):
-    """ FIXME: Not working yet...
+    """
     Extract any workload dataframe between begin_time and end_time.
     Datafram must contain 'submission_time', 'waiting_time' and
-    'execution_time' columns.
+    'execution_time' + 'jobID'  columns.
 
     Jobs that are queued (submitted but not running) before `begin_time`
     and jobs that are running before `begin_time` and/or after `end_time`
@@ -10,11 +10,11 @@ def cut_workload(workload_df, begin_time, end_time):
 
     Example with evalys.Workload:
     >>> w = Workload.from_csv("./examples/UniLu-Gaia-2014-2.swf")
-    >>> cut_workload(w.df, 0, 10000)
+    >>> cut_workload(w.df, 500000, 600000)
 
     Example with evalys.JobSet:
     >>> js = JobSet.from_csv("./examples/jobs.csv")
-    >>> cut_workload(js.df, 0, 10000)
+    >>> cut_workload(js.df, 1000, 2000)
 
     """
     assert begin_time < end_time
@@ -30,26 +30,17 @@ def cut_workload(workload_df, begin_time, end_time):
     end = df.index.searchsorted(end_time)
 
     # Extract jobs that start in the period
-    to_export = df[begin:end]
+    to_export = df.iloc[begin:end]
 
-    # Cut submission at begin
-    to_export.loc[to_export["submission_time"] < begin_time,
-                  "submission_time"] = begin_time
+    # Add job in queue (submission before begin and start after the period)
+    to_export = to_export.append(df[
+        (df["submission_time"] < begin_time)
+        & (df["starting_time"] > end_time)])
+
     # Import jobs that start before and stop during or after the period
-    to_export.append(df[
+    to_export = to_export.append(df[
         (df["starting_time"] < begin_time) &
         (df["starting_time"] + df["execution_time"] > begin_time)])
-
-    # Cut running jobs at the beginning
-    to_export.loc[to_export["starting_time"] < begin_time,
-                  "submission_time"] = begin_time
-
-    if not to_export.empty:
-        # Cut running jobs at the end
-        to_export.loc[to_export["starting_time"] + to_export["execution_time"] > end_time,
-                      "finish_time"] = end_time
-
-        to_export.loc[to_export["finish_time"].isna(),"execution_time"] = to_export["finish_time"] - to_export["starting_time"]
 
     # return dataframe sorted without starting_time column and a proper index
     return to_export.sort_values(by="jobID").reset_index(drop=True)
