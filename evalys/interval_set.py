@@ -125,9 +125,16 @@ def total(itvs):
     '''
     Compute the total number of element by a cumulative sum on the size
     of all intervals
+
+    >>> total([])
+    0
+    >>> total([(0, 0)])
+    1
+    >>> total([(1, 1), (3, 4)])
+    3
     '''
     # Add +1 because it is a closed interval
-    return sum([end - begin for begin, end in itvs]) + 1
+    return sum([(end - begin) + 1 for begin, end in itvs])
 
 #
 # Ensemble operations
@@ -275,6 +282,7 @@ def union(itvs1, itvs2):
     diff21 = difference(itvs2, itvs1)
     union = aggregate(sorted(intersect + diff12 + diff21))
     return union
+
 
 if __name__ == "__main__":
     import doctest

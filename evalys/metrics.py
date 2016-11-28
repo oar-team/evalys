@@ -69,6 +69,10 @@ def compute_load(dataframe, col_begin, col_end, col_cumsum,
 
 
 def _load_insert_element_if_necessary(load_df, at):
+    """
+    Insert an event at the specified point that conserve data consistency
+    for "area" and "proc_alloc" values
+    """
     if len(load_df[load_df.time == at]) == 0:
         prev_el = load_df[load_df.time <= at].tail(1)
         new_el = prev_el.copy()
@@ -86,6 +90,7 @@ def _load_insert_element_if_necessary(load_df, at):
 
 
 def load_mean(df, begin=None, end=None):
+    """ Compute the mean load area from begin to end. """
     load_df = df.reset_index()
     max_to = max(load_df.time)
     if end is None:
@@ -103,19 +108,20 @@ def load_mean(df, begin=None, end=None):
     load_df = _load_insert_element_if_necessary(load_df, begin)
     load_df = _load_insert_element_if_necessary(load_df, end)
 
-    u = load_df[load_df.time < end]
-    u = u[begin <= u.time]
+    u = load_df[(load_df.time < end) & (begin <= load_df.time)]
 
     return u.area.sum()/(end - begin)
 
 
-def fragmentation(free_resources_gaps):
+def fragmentation(free_resources_gaps, p=2, begin=None, end=None):
     """
-    input is a resource indexed list where each element is a numpy
+    Input is a resource indexed list where each element is a numpy
     array of free slots.
+
+    This metrics definition comes from Gher and Shneider CCGRID 2009.
     """
     f = free_resources_gaps
     frag = pd.Series()
     for i, fi in enumerate(f):
-        frag.set_value(i, 1 - (sum(fi**2) / sum(fi)**2))
+        frag.set_value(i, 1 - (sum(fi**p) / sum(fi)**p))
     return frag

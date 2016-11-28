@@ -6,7 +6,7 @@ from evalys.visu import plot_gantt
 from evalys.interval_set import \
         union, difference, intersection, string_to_interval_set, \
         interval_set_to_string, total
-from evalys import metrics
+from evalys.metrics import compute_load, load_mean, fragmentation
 
 
 class JobSet(object):
@@ -42,6 +42,19 @@ class JobSet(object):
                 min([b for x in self.res_set.values() for (b, e) in x]),
                 max([e for x in self.res_set.values() for (b, e) in x]))
 
+        # Add missing columns
+        if 'starting_time' not in self.df.columns:
+            self.df['starting_time'] = \
+                self.df['submission_time'] + self.df['waiting_time']
+        if 'finish_time' not in self.df.columns:
+            self.df['finish_time'] = \
+                self.df['starting_time'] + self.df['execution_time']
+
+        # TODO check consistency on calculated columns...
+
+        # init cache
+        self._utilisation = None
+
     __converters = {
         'jobID': str,
         'allocated_processors': str,
@@ -65,14 +78,30 @@ class JobSet(object):
         df = pd.read_csv(filename, converters=cls.__converters)
         return cls(df, resource_bounds=resource_bounds)
 
-    def gantt(self, ax, title):
+    def gantt(self, ax=None, title="Gantt chart"):
         plot_gantt(self, ax, title)
 
+    @property
     def utilisation(self):
+        if self._utilisation is not None:
+            return self._utilisation
+        df = self.df.copy()
+        df['proc_alloc'] = df.allocated_processors.apply(
+            string_to_interval_set).apply(total)
+        self._utilisation = compute_load(df,
+                                         col_begin='starting_time',
+                                         col_end='finish_time',
+                                         col_cumsum='proc_alloc')
+        return self._utilisation
+
+    def detailed_utilisation(self):
         df = self.free_intervals()
-        df['total'] = total([self.res_bounds]) - df['proc_alloc'].apply(total)
-        df = df.set_index(df.time, drop=True)
+        df['total'] = total([self.res_bounds]) - df.free_itvs.apply(total)
+        df.set_index("time", drop=True, inplace=True)
         return df
+
+    def mean_utilisation(self, begin=None, end=None):
+        return load_mean(self.utilisation, begin=begin, end=end)
 
     def free_intervals(self):
         '''
@@ -85,7 +114,7 @@ class JobSet(object):
         # allocation:
         # Free -> Used : grab = 1
         # Used -> Free : grab = 0
-        event_columns = ['time', 'proc_alloc', 'grab']
+        event_columns = ['time', 'free_itvs', 'grab']
         start_event_df = pd.concat([df['starting_time'],
                                     df['allocated_processors'],
                                     pd.Series(np.ones(len(df), dtype=bool))],
@@ -104,18 +133,18 @@ class JobSet(object):
             ignore_index=True).sort_values(by='time').reset_index(drop=True)
 
         # All resources are free at the beginning
-        event_columns = ['time', 'proc_alloc']
+        event_columns = ['time', 'free_itvs']
         first_row = [0, [self.res_bounds]]
         free_interval_serie = pd.DataFrame(columns=event_columns)
         free_interval_serie.loc[0] = first_row
         for index, row in event_df.iterrows():
-            current_itv = free_interval_serie.ix[index]['proc_alloc']
+            current_itv = free_interval_serie.ix[index]['free_itvs']
             if row.grab:
                 new_itv = difference(current_itv,
-                                     string_to_interval_set(row.proc_alloc))
+                                     string_to_interval_set(row.free_itvs))
             else:
                 new_itv = union(current_itv,
-                                string_to_interval_set(row.proc_alloc))
+                                string_to_interval_set(row.free_itvs))
             new_row = [row.time, new_itv]
             free_interval_serie.loc[index + 1] = new_row
         return free_interval_serie
@@ -144,8 +173,8 @@ class JobSet(object):
             new_slots_time = []
             curr_time = curr_row.time
             taken_resources = difference(prev_free_itvs,
-                                         curr_row.proc_alloc)
-            freed_resources = difference(curr_row.proc_alloc,
+                                         curr_row.free_itvs)
+            freed_resources = difference(curr_row.free_itvs,
                                          prev_free_itvs)
             if i == len(free_interval_serie) - 1:
                 taken_resources = [self.res_bounds]
@@ -177,13 +206,13 @@ class JobSet(object):
                 new_slots_time.append((curr_time, freed_resources))
 
             # update previous
-            prev_free_itvs = curr_row.proc_alloc
+            prev_free_itvs = curr_row.free_itvs
             # clean slots_free
             slots_time = new_slots_time
         return free_slots_df
 
-    def fragmentation(self):
-        return metrics.fragmentation(self.free_resources_gaps())
+    def fragmentation(self, p=2):
+        return fragmentation(self.free_resources_gaps(), p=p)
 
     def free_resources_gaps(self):
         """

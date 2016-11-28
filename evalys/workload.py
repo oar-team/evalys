@@ -398,7 +398,9 @@ class Workload(object):
                           Installation=self.Installation,
                           Note=notes,
                           MaxProcs=self.MaxProcs,
-                          UnixStartTime=int(period.begin))
+                          UnixStartTime=int(period.begin),
+                          ExtractBegin=period.begin,
+                          ExtractEnd=period.end)
             extracted.append(wl)
 
         periods.apply(do_extract, axis=1)
