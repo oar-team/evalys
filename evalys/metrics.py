@@ -18,7 +18,7 @@ def cumulative_waiting_time(dataframe, start_timestamp=None):
 
 
 def compute_load(dataframe, col_begin, col_end, col_cumsum,
-                 UnixStartTime=0):
+                 begin_time=0, end_time=None):
     # Avoid side effect
     df = pd.DataFrame.copy(dataframe)
     df['starting_time'] = df['submission_time'] + df['waiting_time']

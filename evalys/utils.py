@@ -9,12 +9,14 @@ def cut_workload(workload_df, begin_time, end_time):
     are cut to fit in this time slice.
 
     Example with evalys.Workload:
+    >>> from evalys.workload import Workload
     >>> w = Workload.from_csv("./examples/UniLu-Gaia-2014-2.swf")
-    >>> cut_workload(w.df, 500000, 600000)
+    >>> cut_w = cut_workload(w.df, 500000, 600000)
 
     Example with evalys.JobSet:
+    >>> from evalys.jobset import JobSet
     >>> js = JobSet.from_csv("./examples/jobs.csv")
-    >>> cut_workload(js.df, 1000, 2000)
+    >>> cut_js = cut_workload(js.df, 1000, 2000)
 
     """
     assert begin_time < end_time

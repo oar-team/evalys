@@ -56,6 +56,10 @@ def string_to_interval_set(s):
     [(1, 3), (7, 9), (13, 13)]
     >>> string_to_interval_set("")
     []
+    >>> string_to_interval_set("(2,3)")
+    Traceback (most recent call last):
+        ...
+    ValueError: Bad interval format. Parsed string is: (2,3)
     """
     intervals = []
     if not s:
@@ -73,8 +77,8 @@ def string_to_interval_set(s):
         else:
             res = sorted([int(x) for x in res_str])
             intervals = _ids_to_itervals(res)
-    except ValueError:
-        print("Bad interval format. Parsed string is: {}".format(s))
+    except (ValueError, IndexError):
+        raise ValueError("Bad interval format. Parsed string is: {}".format(s))
 
     return aggregate(intervals)
 
@@ -84,6 +88,12 @@ def string_to_interval_set(s):
 
 
 def interval_set_to_set(intervals):
+    """ Convert interval set to python set
+    >>> interval_set_to_set([])
+    set()
+    >>> interval_set_to_set([(1, 1), (3, 4)])
+    {1, 3, 4}
+    """
     s = set()
 
     for (begin, end) in intervals:
@@ -94,6 +104,12 @@ def interval_set_to_set(intervals):
 
 
 def set_to_interval_set(s):
+    """ Convert python set to interval set
+    >>> set_to_interval_set(set())
+    []
+    >>> set_to_interval_set({1, 2, 5, 7, 9, 10, 11})
+    [(1, 2), (5, 5), (7, 7), (9, 11)]
+    """
     intervals = []
     l = list(s)
     l.sort()
@@ -107,7 +123,7 @@ def set_to_interval_set(s):
             if l[i] == current_interval[1] + 1:
                 current_interval[1] = l[i]
             else:
-                intervals.append(current_interval)
+                intervals.append(tuple(current_interval))
                 current_interval = [l[i], l[i]]
             i += 1
 
@@ -144,8 +160,12 @@ def total(itvs):
 def difference(itvs_base, itvs2):
     """ returns the difference between an interval set and an other
 
+    >>> difference([], [(1, 1)])
+    []
     >>> difference([(1, 1), (3, 4)], [(1, 2), (4, 7)])
     [(3, 3)]
+    >>> difference([(1, 12)], [(1, 2), (4, 7)])
+    [(3, 3), (8, 12)]
     """
     itvs1 = copy.copy(itvs_base)
     lx = len(itvs1)
@@ -195,18 +215,20 @@ def difference(itvs_base, itvs2):
 def aggregate(itvs):
     """Aggregate not overlapping intervals (intersect must be empty) to remove gap.
 
+    >>> aggregate([])
+    []
     >>> aggregate([(1, 2), (3, 4)])
     [(1, 4)]
     """
-    if itvs is []:
-        return itvs
+    if itvs == []:
+        return []
 
     # TODO check overlapping
 
     res = []
     lg = len(itvs)
     i = 1
-    a, b = itvs[i - 1]
+    a, b = itvs[0]
     while True:
         if i == lg:
             res.append((a, b))
@@ -228,6 +250,10 @@ def intersection(itvs1, itvs2):
     [(1, 2), (5, 5)]
     >>> intersection([(2, 3), (5, 7)], [(1, 1), (4, 4)])
     []
+    >>> intersection([(3, 7)], [(2, 8)])
+    [(3, 7)]
+    >>> intersection([(3, 7)], [(2, 6)])
+    [(3, 6)]
     """
 
     lx = len(itvs1)
@@ -282,8 +308,3 @@ def union(itvs1, itvs2):
     diff21 = difference(itvs2, itvs1)
     union = aggregate(sorted(intersect + diff12 + diff21))
     return union
-
-
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()

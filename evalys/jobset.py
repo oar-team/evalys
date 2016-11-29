@@ -24,6 +24,18 @@ class JobSet(object):
         [(1, 2), (5, 5), (10, 50)]
         # strinf representation
         1-2 5 10-50
+
+    For example:
+    >>> from evalys.jobset import JobSet
+    >>> js = JobSet.from_csv("./examples/jobs.csv")
+    >>> js.gantt()
+    >>> # to show the graph
+    >>> # import matplotlib.pyplot as plt
+    >>> # plt.show()
+
+    You can also specify the the resource_bounds like this:
+    >>> js = JobSet.from_csv("./examples/jobs.csv",
+    ...                      resource_bounds=(0, 64))
     '''
     def __init__(self, df, resource_bounds=None):
         self.res_set = {}
@@ -78,6 +90,10 @@ class JobSet(object):
         df = pd.read_csv(filename, converters=cls.__converters)
         return cls(df, resource_bounds=resource_bounds)
 
+    def to_csv(self, filename):
+        with open(filename, 'w') as f:
+            self.df.to_csv(f, index=False, sep=",")
+
     def gantt(self, ax=None, title="Gantt chart"):
         plot_gantt(self, ax, title)
 
@@ -100,12 +116,12 @@ class JobSet(object):
         df.set_index("time", drop=True, inplace=True)
         return df
 
-    def mean_utilisation(self, begin=None, end=None):
-        return load_mean(self.utilisation, begin=begin, end=end)
+    def mean_utilisation(self, begin_time=None, end_time=None):
+        return load_mean(self.utilisation, begin=begin_time, end=end_time)
 
-    def free_intervals(self):
+    def free_intervals(self, begin_time=0, end_time=None):
         '''
-        Return a dataframe with the free resources over time. Each line
+        :return: a dataframe with the free resources over time. Each line
         corespounding to an event in the jobset.
         '''
         df = self.df
@@ -130,11 +146,12 @@ class JobSet(object):
         # merge events and sort them
         event_df = start_event_df.append(
             stop_event_df,
-            ignore_index=True).sort_values(by='time').reset_index(drop=True)
+            ignore_index=True).sort_values(
+                by=['time', 'grab']).reset_index(drop=True)
 
         # All resources are free at the beginning
         event_columns = ['time', 'free_itvs']
-        first_row = [0, [self.res_bounds]]
+        first_row = [begin_time, [self.res_bounds]]
         free_interval_serie = pd.DataFrame(columns=event_columns)
         free_interval_serie.loc[0] = first_row
         for index, row in event_df.iterrows():
@@ -147,17 +164,21 @@ class JobSet(object):
                                 string_to_interval_set(row.free_itvs))
             new_row = [row.time, new_itv]
             free_interval_serie.loc[index + 1] = new_row
+
+        if end_time is not None:
+            last_row = [end_time, []]
+            free_interval_serie.loc[len(free_interval_serie)] = last_row
         return free_interval_serie
 
-    def free_slots(self):
+    def free_slots(self, begin_time=0, end_time=None):
         '''
-        Return a DataFrame (compatible with a JobSet) that contains all the
+        :return: a DataFrame (compatible with a JobSet) that contains all the
         not overlapping square free slots of this JobSet maximzing the time.
         it can be transform to a JobSet to be plot as gantt chart.
         '''
         # slots_time contains tuple of
         # (slot_begin_time,free_resources_intervals)
-        free_interval_serie = self.free_intervals()
+        free_interval_serie = self.free_intervals(begin_time, end_time)
         slots_time = [(free_interval_serie.time[0],
                       [self.res_bounds])]
         new_slots_time = slots_time
@@ -211,22 +232,35 @@ class JobSet(object):
             slots_time = new_slots_time
         return free_slots_df
 
-    def fragmentation(self, p=2):
-        return fragmentation(self.free_resources_gaps(), p=p)
+    def fragmentation(self,
+                      p=2,
+                      resource_intervals=None,
+                      begin_time=0,
+                      end_time=None):
+        return fragmentation(
+            self.free_resources_gaps(resource_intervals,
+                                     begin_time, end_time),
+            p=p)
 
-    def free_resources_gaps(self):
+    def free_resources_gaps(self, resource_intervals=None,
+                            begin_time=0, end_time=None):
         """
-        Return a resource indexed list where each element is a numpy
+        :param resource_intervals: An interval set on which compute the
+        free resources gaps, Default: self.res_bounds
+        :return: a resource indexed list where each element is a numpy
         array of free slots.
+
         """
         js = self
-        fs = js.free_slots()
+        fs = js.free_slots(begin_time, end_time)
         free_resources_gaps = []
-        for res in range(js.res_bounds[0], js.res_bounds[1] + 1):
+        if resource_intervals is None:
+            resource_intervals = self.res_bounds
+        for res in range(resource_intervals[0], resource_intervals[1] + 1):
             free_resources_gaps.append([])
 
         def get_free_slots_by_resources(x):
-            for res in range(js.res_bounds[0], js.res_bounds[1] + 1):
+            for res in range(resource_intervals[0], resource_intervals[1] + 1):
                 if intersection(
                         string_to_interval_set(x.allocated_processors),
                         [(res, res)]):

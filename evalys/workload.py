@@ -380,10 +380,11 @@ class Workload(object):
         to_csv().
 
         For example:
-        >>> w = Workload.from_csv("../examples/UniLu-Gaia-2014-2.swf")
+        >>> from evalys.workload import Workload
+        >>> w = Workload.from_csv("./examples/UniLu-Gaia-2014-2.swf")
         >>> periods = pd.DataFrame([{"begin": 200000, "end": 400000},
-        >>>                         {"begin": 400000, "end": 600000}])
-        >>> w.extract(periods)
+        ...                         {"begin": 400000, "end": 600000}])
+        >>> extracted = w.extract(periods)
         """
 
         extracted = []
