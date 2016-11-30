@@ -17,9 +17,10 @@ class JobSet(object):
     It takes a dataframe in input that are intended to have the columns
     defined in JobSet.columns.
 
-    The 'allocated_processors' should contain the string representation of
-    an interval set of the allocated resources for the given job, i.e. for
-    this interval:
+    The `allocated_processors` one should contain the string representation
+    of an interval set of the allocated resources for the given job, i.e.
+    for this interval::
+
         # interval_set representation
         [(1, 2), (5, 5), (10, 50)]
         # strinf representation
@@ -35,7 +36,7 @@ class JobSet(object):
 
     You can also specify the the resource_bounds like this:
     >>> js = JobSet.from_csv("./examples/jobs.csv",
-    ...                      resource_bounds=(0, 64))
+    ...                      resource_bounds=(0, 63))
     '''
     def __init__(self, df, resource_bounds=None):
         self.res_set = {}
@@ -148,6 +149,19 @@ class JobSet(object):
             stop_event_df,
             ignore_index=True).sort_values(
                 by=['time', 'grab']).reset_index(drop=True)
+
+        # cut events if necessary
+        # reindex event_df
+        event_df = event_df.sort_values(by='time').set_index(['time'],
+                                                             drop=False)
+        # find closest index
+        begin = event_df.index.searchsorted(begin_time)
+        if end_time is not None:
+            end = event_df.index.searchsorted(end_time)
+        else:
+            end = len(event_df.index) - 1
+
+        event_df = event_df.iloc[begin:end].reset_index(drop=True)
 
         # All resources are free at the beginning
         event_columns = ['time', 'free_itvs']
