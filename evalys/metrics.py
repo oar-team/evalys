@@ -123,5 +123,9 @@ def fragmentation(free_resources_gaps, p=2, begin=None, end=None):
     f = free_resources_gaps
     frag = pd.Series()
     for i, fi in enumerate(f):
-        frag.set_value(i, 1 - (sum(fi**p) / sum(fi)**p))
+        if fi.size == 0:
+            frag_i = 0
+        else:
+            frag_i = 1 - (sum(fi**p) / sum(fi)**p)
+        frag.set_value(i, frag_i)
     return frag
