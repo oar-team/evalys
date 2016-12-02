@@ -267,7 +267,7 @@ def plot_series(series_type, jobsets, ax=None, time_scale=False):
     ax.grid(True)
 
 
-def plot_gantt_general_shape(jobset_list, ax=None):
+def plot_gantt_general_shape(jobset_list, ax=None, alpha=0.3):
     '''
     Draw a general gantt shape of multiple jobsets on one plot for comparison
     '''
@@ -286,17 +286,20 @@ def plot_gantt_general_shape(jobset_list, ax=None):
 
         # generate legend
         legend_rect.append(
-            mpatch.Rectangle((0, 1), 12, 10, alpha=0.2, color=color))
+            mpatch.Rectangle((0, 1), 12, 10, alpha=alpha, color=color))
         legend_label.append(jobset_name)
 
-        for i, job in jobset.df.iterrows():
+        def plot_job(job):
             duration = job['execution_time']
-            for i, itv in enumerate(jobset.res_set[job['jobID']]):
+            for itv in job['allocated_processors']:
                 (y0, y1) = itv
                 rect = mpatch.Rectangle((job['starting_time'], y0), duration,
-                                        y1 - y0 + 0.9, alpha=0.2,
+                                        y1 - y0 + 0.9, alpha=alpha,
                                         color=color)
                 ax.add_artist(rect)
+
+        # apply for all jobs
+        jobset.df.apply(plot_job, axis=1)
 
     # do include legend
     ax.legend(legend_rect, legend_label, loc='center',

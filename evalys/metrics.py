@@ -1,10 +1,12 @@
 import pandas as pd
 
 
-def cumulative_waiting_time(dataframe, start_timestamp=None):
+def cumulative_waiting_time(dataframe):
     '''
-    Input: a DataFrame that contains a starting_time and a waiting_time
-    column
+    Compute the cumulative waiting time on the given dataframe
+
+    :dataframe: a DataFrame that contains a "starting_time" and a
+    "waiting_time" column.
     '''
     # Avoid side effect
     df = pd.DataFrame.copy(dataframe)
@@ -12,13 +14,23 @@ def cumulative_waiting_time(dataframe, start_timestamp=None):
     df_sorted_by_starting_time = df.sort_values(by='starting_time')
 
     wt_cumsum = df_sorted_by_starting_time.waiting_time.cumsum()
+    wt_cumsum.name = "cumulative waiting time"
     # Sort by starting time
     wt_cumsum.index = df_sorted_by_starting_time['starting_time']
+
     return wt_cumsum
 
 
 def compute_load(dataframe, col_begin, col_end, col_cumsum,
                  begin_time=0, end_time=None):
+    """
+    Compute the load of the `col_cumsum` columns between events from
+    `col_begin` to `col_end`. In practice it is used to compute the queue
+    load and the cluster load (utilisation).
+
+    :returns: a load dataframe of all events indexed by time with a `load`
+    and an `area` column.
+    """
     # Avoid side effect
     df = pd.DataFrame.copy(dataframe)
     df['starting_time'] = df['submission_time'] + df['waiting_time']
@@ -65,25 +77,27 @@ def compute_load(dataframe, col_begin, col_end, col_cumsum,
     load_df["area"] = - load_df["time"].diff(-1) * load_df[col_cumsum]
     del load_df["time"]
 
+    load_df.columns = ["load", "area"]
+
     return load_df
 
 
 def _load_insert_element_if_necessary(load_df, at):
     """
     Insert an event at the specified point that conserve data consistency
-    for "area" and "proc_alloc" values
+    for "area" and "load" values
     """
     if len(load_df[load_df.time == at]) == 0:
         prev_el = load_df[load_df.time <= at].tail(1)
         new_el = prev_el.copy()
         next_el = load_df[load_df.time >= at].head(1)
         new_el.time = at
-        new_el.area = float(new_el.proc_alloc) * float(next_el.time - at)
+        new_el.area = float(new_el.load) * float(next_el.time - at)
         load_df.loc[prev_el.index, "area"] = \
-            float(prev_el.proc_alloc) * float(at - prev_el.time)
+            float(prev_el.load) * float(at - prev_el.time)
         load_df.loc[len(load_df)] = [
             float(new_el.time),
-            float(new_el.proc_alloc),
+            float(new_el.load),
             float(new_el.area)]
         load_df = load_df.sort_values(by=["time"])
     return load_df

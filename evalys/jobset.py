@@ -26,6 +26,10 @@ class JobSet(object):
         # strinf representation
         1-2 5 10-50
 
+    .. warn:: Floating point precision is set to `self.float_precision` so
+        all floating point values are rounded with this number of digits.
+        Defalut set to 6
+
     For example:
     >>> from evalys.jobset import JobSet
     >>> js = JobSet.from_csv("./examples/jobs.csv")
@@ -38,12 +42,10 @@ class JobSet(object):
     >>> js = JobSet.from_csv("./examples/jobs.csv",
     ...                      resource_bounds=(0, 63))
     '''
-    def __init__(self, df, resource_bounds=None):
-        self.df = df
-
-        # compute resources intervals
-        self.df.allocated_processors = \
-            self.df.allocated_processors.map(string_to_interval_set)
+    def __init__(self, df, resource_bounds=None, float_precision=6):
+        # set float round precision
+        self.float_precision = float_precision
+        self.df = np.round(df, float_precision)
 
         if resource_bounds:
             self.res_bounds = resource_bounds
@@ -88,13 +90,27 @@ class JobSet(object):
     @classmethod
     def from_csv(cls, filename, resource_bounds=None):
         df = pd.read_csv(filename, converters=cls.__converters)
+
+        # convert resources intervals
+        df.allocated_processors = \
+            df.allocated_processors.map(string_to_interval_set)
+
         return cls(df, resource_bounds=resource_bounds)
 
     def to_csv(self, filename):
-        self.df.allocated_processors = \
-            self.df.allocated_processors.apply(interval_set_to_string)
+        """ Export this jobset to a csv file with a ',' as separator.
+
+        Example:
+        >>> from evalys.jobset import JobSet
+        >>> js = JobSet.from_csv("./examples/jobs.csv")
+        >>> js.to_csv("/tmp/jobs.csv")
+        """
+        df = self.df.copy()
+        df.allocated_processors = \
+            df.allocated_processors.apply(interval_set_to_string)
         with open(filename, 'w') as f:
-            self.df.to_csv(f, index=False, sep=",")
+            df.to_csv(f, index=False, sep=",",
+                      float_format='%.{}f'.format(self.float_precision))
 
     def gantt(self, ax=None, title="Gantt chart"):
         plot_gantt(self, ax, title)
