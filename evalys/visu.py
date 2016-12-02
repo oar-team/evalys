@@ -6,7 +6,7 @@ import matplotlib.patches as mpatch
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn
+import seaborn as sns
 import random
 import colorsys
 
@@ -173,7 +173,7 @@ def plot_gantt_pstates(jobset, pstates, ax, title, labels=True,
                  soff_pstates=soff_pstates)
 
 
-def plot_load(jobset, ax=None, title="Load", labels=True):
+def plot_processor_load(jobset, ax=None, title="Load", labels=True):
     """
     Display the impact of each job on the load of each processor.
 
@@ -414,7 +414,7 @@ def plot_fragmentation(frag, ax=None, label="Fragmentation"):
     ax[0].set_title("Fragmentation over resources")
 
     # plot distribution
-    seaborn.distplot(frag, ax=ax[1], label=label, kde=False, rug=True)
+    sns.distplot(frag, ax=ax[1], label=label, kde=False, rug=True)
     ax[1].set_title("Fragmentation distribution")
 
     # plot ecdf
@@ -422,3 +422,84 @@ def plot_fragmentation(frag, ax=None, label="Fragmentation"):
     ecdf = ECDF(frag)
     ax[2].step(ecdf.x, ecdf.y, label=label)
     ax[2].set_title("Fragmentation ecdf")
+
+
+def plot_load(load, nb_resources=None, ax=None, normalize=False,
+              time_scale=False, load_label="load",
+              UnixStartTime=0, TimeZoneString='UTC'):
+    '''
+    Plots the number of used resources against time
+    :normalize: if True normalize by the number of resources
+    `nb_resources`
+    '''
+    # make the time index a column
+    mean = metrics.load_mean(load)
+    u = load.reset_index()
+
+    if time_scale:
+        # convert timestamp to datetime
+        u.index = pd.to_datetime(u['time'] + UnixStartTime,
+                                 unit='s')
+        u.index.tz_localize('UTC').tz_convert(TimeZoneString)
+
+    if normalize and nb_resources is None:
+        nb_resources = u.load.max()
+
+    if normalize:
+        u.load = u.load / nb_resources
+        mean = mean / nb_resources
+
+    # get an axe if not provided
+    if ax is None:
+        ax = plt.gca()
+
+    # leave room to have better view
+    ax.margins(x=0.1, y=0.1)
+
+    # plot load
+    u.load.plot(drawstyle="steps", ax=ax, label=load_label)
+
+    # plot a line for max available area
+    if nb_resources and not normalize:
+        ax.plot([u.index[0], u.index[-1]],
+                [nb_resources, nb_resources],
+                linestyle='-', linewidth=2,
+                label="Maximum resources ({})".format(nb_resources))
+
+    # plot a line for mean utilisation
+    ax.plot([u.index[0], u.index[-1]],
+            [mean, mean],
+            linestyle='--', linewidth=1,
+            label="Mean {0} ({1:.2f})".format(load_label, mean))
+    sns.rugplot(u.load[u.load == 0].index, ax=ax, color='r')
+    ax.scatter([], [], marker="|", linewidth=1, s=200,
+               label="Reset event ({} == 0)".format(load_label), color='r')
+    # FIXME: Add legend when this bug is fixed
+    # https://github.com/mwaskom/seaborn/issues/1071
+
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+
+def plot_free_resources(utilisation, nb_resources, normalize=False,
+                        time_scale=False,
+                        UnixStartTime=0, TimeZoneString='UTC'):
+    '''
+    Plots the number of free resources against time
+    :normalize: if True normalize by the number of resources `nb_resources`
+    '''
+    free = nb_resources - utilisation
+
+    if normalize:
+        free = free / nb_resources
+
+    if time_scale:
+        free.index = pd.to_datetime(free['time'] + UnixStartTime,
+                                    unit='s', utc=True)
+        free.index.tz_localize('UTC').tz_convert(TimeZoneString)
+
+    free.plot()
+    # plot a line for the number of procs
+    plt.plot([free.index[0], free.index[-1]],
+             [nb_resources, nb_resources],
+             linestyle='-', linewidth=1,
+             label="Maximum resources ({})".format(nb_resources))

@@ -15,6 +15,7 @@ import re
 import datetime
 from evalys.metrics import compute_load, load_mean
 from evalys.utils import cut_workload
+from evalys import visu
 
 
 class Workload(object):
@@ -260,70 +261,16 @@ class Workload(object):
                                          'proc_alloc', self.UnixStartTime)
         return self._utilisation
 
-    def plot_utilisation(self, ax=None, normalize=False, time_scale=False):
-        '''
-        Plots the number of used resources against time
-        opt:
-            - normalize (bool) : normalize by the number of procs
-        '''
-        # make the time index a column
-        mean = load_mean(self.utilisation)
-        u = self.utilisation.reset_index()
-
-        if time_scale:
-            # convert timestamp to datetime
-            u.index = pd.to_datetime(u['time'] + self.UnixStartTime,
-                                     unit='s')
-            u.index.tz_localize('UTC').tz_convert(self.TimeZoneString)
-
-        # get an axe if not provided
-        if ax is None:
-            ax = plt.gca()
-
-        # leave room to have better view
-        ax.margins(x=0.1, y=0.1)
-
-        if normalize:
-            u.proc_alloc = u.proc_alloc / self.MaxProcs
-            mean = mean / self.MaxProcs
-
-        # plot utilisation
-        u.proc_alloc.plot(drawstyle="steps", ax=ax)
-
-        # plot a line for max available area
-        if hasattr(self, "MaxProcs") and not normalize:
-            ax.plot([u.index[0], u.index[-1]],
-                    [self.MaxProcs, self.MaxProcs],
-                    linestyle='-', linewidth=2,
-                    label="Maximum resources ({})".format(self.MaxProcs))
-
-        # plot a line for mean utilisation
-        ax.plot([u.index[0], u.index[-1]],
-                [mean, mean],
-                linestyle='--', linewidth=2,
-                label="Mean resources utilisation ({0:.2f})".format(mean))
-
-    def plot_free_resources(self, normalize=False, time_scale=False):
-        '''
-        Plots the number of free resources against time
-        opt:
-            - normalize (bool) : normalize by the number of procs
-        '''
-        free = self.MaxProcs - self.utilisation
-
-        if normalize:
-            free = free / self.MaxProcs
-
-        if time_scale:
-            free.index = pd.to_datetime(free['time'] + self.UnixStartTime,
-                                        unit='s', utc=True)
-            free.index.tz_localize('UTC').tz_convert(self.TimeZoneString)
-
-        free.plot()
-        # plot a line for the number of procs
-        plt.plot([free.index[0], free.index[-1]],
-                 [self.MaxProcs, self.MaxProcs],
-                 color='k', linestyle='-', linewidth=2)
+    def plot(self):
+        _, axe = plt.subplots(nrows=2, sharex=True)
+        visu.plot_load(self.utilisation, self.MaxProcs, time_scale=True,
+                       UnixStartTime=self.UnixStartTime,
+                       TimeZoneString=self.TimeZoneString,
+                       load_label="utilisation", ax=axe[0])
+        visu.plot_load(self.queue, self.MaxProcs, time_scale=True,
+                       UnixStartTime=self.UnixStartTime,
+                       TimeZoneString=self.TimeZoneString,
+                       load_label="queue", ax=axe[1])
 
     def extract_periods_with_given_utilisation(self,
                                                period_in_hours,
@@ -498,5 +445,5 @@ class Workload(object):
 
         grouped = self.df.groupby('proc_alloc')
         self._fraction_jobs_by_job_size = grouped['jobID'].agg(
-            {'jobs': lambda x: float(x.count())/self.nb_jobs})
+            {'jobs': lambda x: float(x.count())/len(self.df)})
         return self._fraction_jobs_by_job_size
