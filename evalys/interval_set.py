@@ -6,8 +6,6 @@ element ID is formated (eID, eID).
 
 An interval set is a list of non overlapping intervals.
 """
-import copy
-
 #
 # Conversion operations
 #
@@ -69,10 +67,11 @@ def string_to_interval_set(s):
         if '-' in (' ').join(res_str):
             # it is already intervals so get it directly
             for inter in res_str:
-                try:
-                    (begin, end) = inter.split('-')
+                splitted = inter.split('-')
+                if len(splitted) == 2:
+                    (begin, end) = splitted
                     intervals.append((int(begin), int(end)))
-                except ValueError:
+                else:
                     intervals.append((int(inter), int(inter)))
         else:
             res = sorted([int(x) for x in res_str])
@@ -167,7 +166,7 @@ def difference(itvs_base, itvs2):
     >>> difference([(1, 12)], [(1, 2), (4, 7)])
     [(3, 3), (8, 12)]
     """
-    itvs1 = copy.copy(itvs_base)
+    itvs1 = [(k, v) for (k, v) in itvs_base]
     lx = len(itvs1)
     ly = len(itvs2)
     i = 0
@@ -220,13 +219,13 @@ def aggregate(itvs):
     >>> aggregate([(1, 2), (3, 4)])
     [(1, 4)]
     """
-    if itvs == []:
-        return []
+    lg = len(itvs)
+    if lg <= 1:
+        return itvs
 
     # TODO check overlapping
 
     res = []
-    lg = len(itvs)
     i = 1
     a, b = itvs[0]
     while True:

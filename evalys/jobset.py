@@ -39,21 +39,20 @@ class JobSet(object):
     ...                      resource_bounds=(0, 63))
     '''
     def __init__(self, df, resource_bounds=None):
-        self.res_set = {}
         self.df = df
 
         # compute resources intervals
-        for i, row in self.df.iterrows():
-            raw_res_str = row['allocated_processors']
-            self.res_set[row['jobID']] = string_to_interval_set(
-                str(raw_res_str))
+        self.df.allocated_processors = \
+            self.df.allocated_processors.map(string_to_interval_set)
 
         if resource_bounds:
             self.res_bounds = resource_bounds
         else:
             self.res_bounds = (
-                min([b for x in self.res_set.values() for (b, e) in x]),
-                max([e for x in self.res_set.values() for (b, e) in x]))
+                min([b for x in self.df.allocated_processors
+                     for (b, e) in x]),
+                max([e for x in self.df.allocated_processors
+                     for (b, e) in x]))
 
         # Add missing columns
         if 'starting_time' not in self.df.columns:
@@ -92,6 +91,8 @@ class JobSet(object):
         return cls(df, resource_bounds=resource_bounds)
 
     def to_csv(self, filename):
+        self.df.allocated_processors = \
+            self.df.allocated_processors.apply(interval_set_to_string)
         with open(filename, 'w') as f:
             self.df.to_csv(f, index=False, sep=",")
 
@@ -103,8 +104,7 @@ class JobSet(object):
         if self._utilisation is not None:
             return self._utilisation
         df = self.df.copy()
-        df['proc_alloc'] = df.allocated_processors.apply(
-            string_to_interval_set).apply(total)
+        df['proc_alloc'] = df.allocated_processors.apply(total)
         self._utilisation = compute_load(df,
                                          col_begin='starting_time',
                                          col_end='finish_time',
@@ -171,11 +171,9 @@ class JobSet(object):
         for index, row in event_df.iterrows():
             current_itv = free_interval_serie.ix[index]['free_itvs']
             if row.grab:
-                new_itv = difference(current_itv,
-                                     string_to_interval_set(row.free_itvs))
+                new_itv = difference(current_itv, row.free_itvs)
             else:
-                new_itv = union(current_itv,
-                                string_to_interval_set(row.free_itvs))
+                new_itv = union(current_itv, row.free_itvs)
             new_row = [row.time, new_itv]
             free_interval_serie.loc[index + 1] = new_row
 
@@ -221,7 +219,7 @@ class JobSet(object):
                         # store new slots
                         slots = slots + 1
                         new_slot = [str(slots),
-                                    interval_set_to_string(to_update),
+                                    to_update,
                                     begin_time,
                                     curr_time,
                                     curr_time - begin_time,
@@ -275,9 +273,7 @@ class JobSet(object):
 
         def get_free_slots_by_resources(x):
             for res in range(resource_intervals[0], resource_intervals[1] + 1):
-                if intersection(
-                        string_to_interval_set(x.allocated_processors),
-                        [(res, res)]):
+                if intersection(x.allocated_processors, [(res, res)]):
                     free_resources_gaps[res].append(x.execution_time)
 
         # compute resource gaps
