@@ -33,6 +33,10 @@ def main():
                         help='The power states which correspond to switching OFF machine state')
     parser.add_argument('--output', '-o',
                         help='The output file (format depending on the given extension, pdf is RECOMMENDED). For example: figure.pdf')
+    parser.add_argument("--no_gantt", action='store_true',
+                        help="If set, the gantt chart will NOT be outputted")
+    parser.add_argument("--no_ru", action='store_true',
+                        help="If set, the resource usage will NOT be outputted")
 
     args = parser.parse_args()
 
@@ -57,7 +61,14 @@ def main():
     assert((son_pstates & soff_pstates) == set()), "pstate collision"
 
     # Figure creation
-    nb_subplots = 2
+    nb_subplots = 0
+
+    if not args.no_gantt:
+        nb_subplots = nb_subplots + 1
+
+    if not args.no_ru:
+        nb_subplots = nb_subplots + 1
+
     if args.energyCSV:
         nb_subplots = nb_subplots + 1
     if args.llhCSV:
@@ -69,15 +80,21 @@ def main():
         ax_list = [ax_list]
 
     # Plotting
-    plot_gantt_pstates(j, c, ax_list[0], str(args.jobsCSV), labels=False,
-                       off_pstates = off_pstates,
-                       son_pstates = son_pstates,
-                       soff_pstates = soff_pstates)
+    ax_id = 0
+    if not args.no_gantt:
+        plot_gantt_pstates(j, c, ax_list[ax_id],
+                           title="Gantt chart",
+                           labels=False,
+                           off_pstates = off_pstates,
+                           son_pstates = son_pstates,
+                           soff_pstates = soff_pstates)
+        ax_id = ax_id + 1
 
-    plot_mstates(m.df, ax_list[1], title=args.mstatesCSV)
-    ax_list[1].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    if not args.no_ru:
+        plot_mstates(m.df, ax_list[ax_id], title="Resources state")
+        ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax_id = ax_id + 1
 
-    ax_id = 2
     if args.energyCSV:
         e = pd.read_csv(args.energyCSV)
         e.dropna(axis=0, how='any', subset=['epower'], inplace=True)

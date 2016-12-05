@@ -8,6 +8,7 @@ from evalys.visu import *
 from evalys.jobset import *
 
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 def main():
     # Argument parsing
@@ -24,7 +25,7 @@ def main():
                         help='The power states which correspond to switching OFF machine state')
     parser.add_argument('--output', '-o',
                         help='The output file (format depending on the given extension, pdf is RECOMMENDED). For example: figure.pdf')
-    parser.add_argument('--title', default = 'Gantt + Sleep',
+    parser.add_argument('--title', default = 'Gantt chart',
                         help="Sets the subplot title")
 
     args = parser.parse_args()
@@ -59,6 +60,14 @@ def main():
                        off_pstates=off_pstates,
                        son_pstates=son_pstates,
                        soff_pstates=soff_pstates)
+
+    legend_job = mpatches.Patch(color='#8960b3', label="Job", alpha=0.3)
+    legend_off = mpatches.Patch(color='#000000', label="OFF", alpha=0.6)
+    legend_son = mpatches.Patch(color='#56ae6c', label="Switching ON", alpha=1)
+    legend_soff = mpatches.Patch(color='#ba495b', label="Switching OFF", alpha=1)
+
+    ax_list[0].legend(handles=[legend_job, legend_off, legend_son, legend_soff],
+                      loc='center left', bbox_to_anchor=(1, 0.5))
 
     # Figure outputting
     if args.output is not None:

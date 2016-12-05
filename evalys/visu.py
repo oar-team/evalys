@@ -65,6 +65,7 @@ def plot_pstates(pstates, x_horizon, ax, palette=None,
     if palette == None:
         palette = ["#000000", "#56ae6c", "#ba495b"]
     assert(len(palette) >= 3)
+    labels = ["OFF", "switch ON", "switch OFF"]
     alphas = [0.6, 1, 1]
 
     interesting_pstates = off_pstates | son_pstates | soff_pstates
@@ -80,13 +81,15 @@ def plot_pstates(pstates, x_horizon, ax, palette=None,
 
             color = palette[col_id]
             alpha = alphas[col_id]
+            label = labels[col_id]
 
             interval_list = pstates.intervals[job['interval_id']]
             for machine_interval in interval_list:
                 (y0, y1) = machine_interval
                 (b, e) = (job['begin'], min(job['end'], x_horizon))
                 rect = mpatch.Rectangle((b, y0), e - b, y1 - y0 + 0.9,
-                                        color=color, alpha=alpha)
+                                        color=color, alpha=alpha,
+                                        label=label)
                 ax.add_artist(rect)
 
 def plot_mstates(mstates_df, ax, title=None, palette=None, reverse=True):
