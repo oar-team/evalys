@@ -1,10 +1,12 @@
 import pandas as pd
 
 
-def cumulative_waiting_time(dataframe, start_timestamp=None):
+def cumulative_waiting_time(dataframe):
     '''
-    Input: a DataFrame that contains a starting_time and a waiting_time
-    column
+    Compute the cumulative waiting time on the given dataframe
+
+    :dataframe: a DataFrame that contains a "starting_time" and a
+    "waiting_time" column.
     '''
     # Avoid side effect
     df = pd.DataFrame.copy(dataframe)
@@ -12,17 +14,27 @@ def cumulative_waiting_time(dataframe, start_timestamp=None):
     df_sorted_by_starting_time = df.sort_values(by='starting_time')
 
     wt_cumsum = df_sorted_by_starting_time.waiting_time.cumsum()
+    wt_cumsum.name = "cumulative waiting time"
     # Sort by starting time
     wt_cumsum.index = df_sorted_by_starting_time['starting_time']
+
     return wt_cumsum
 
 
 def compute_load(dataframe, col_begin, col_end, col_cumsum,
-                 UnixStartTime=0):
+                 begin_time=0, end_time=None):
+    """
+    Compute the load of the `col_cumsum` columns between events from
+    `col_begin` to `col_end`. In practice it is used to compute the queue
+    load and the cluster load (utilisation).
+
+    :returns: a load dataframe of all events indexed by time with a `load`
+    and an `area` column.
+    """
     # Avoid side effect
     df = pd.DataFrame.copy(dataframe)
     df['starting_time'] = df['submission_time'] + df['waiting_time']
-    df['stop'] = df['starting_time'] + df['execution_time']
+    df['finish_time'] = df['starting_time'] + df['execution_time']
 
     df = df.sort_values(by=col_begin)
 
@@ -30,8 +42,8 @@ def compute_load(dataframe, col_begin, col_end, col_cumsum,
     # - still running jobs (runtime = -1)
     # - not scheduled jobs (wait = -1)
     # - no procs allocated (proc_alloc = -1)
-    max_time = df['stop'].max() + 1000
-    df.ix[df['execution_time'] == -1, 'stop'] = max_time
+    max_time = df['finish_time'].max() + 1000
+    df.ix[df['execution_time'] == -1, 'finish_time'] = max_time
     df.ix[df['execution_time'] == -1, 'starting_time'] = max_time
     df = df[df['proc_alloc'] > 0]
 
@@ -58,34 +70,41 @@ def compute_load(dataframe, col_begin, col_end, col_cumsum,
     # sum the event that happend at the same time and cummulate events
     load_df = pd.DataFrame(
         event_df.groupby(event_df['time'])[col_cumsum].sum().cumsum(),
-        columns=["proc_alloc"])
+        columns=[col_cumsum])
     load_df["time"] = load_df.index
 
     # compute area
     load_df["area"] = - load_df["time"].diff(-1) * load_df[col_cumsum]
     del load_df["time"]
 
+    load_df.columns = ["load", "area"]
+
     return load_df
 
 
 def _load_insert_element_if_necessary(load_df, at):
+    """
+    Insert an event at the specified point that conserve data consistency
+    for "area" and "load" values
+    """
     if len(load_df[load_df.time == at]) == 0:
         prev_el = load_df[load_df.time <= at].tail(1)
         new_el = prev_el.copy()
         next_el = load_df[load_df.time >= at].head(1)
         new_el.time = at
-        new_el.area = float(new_el.proc_alloc) * float(next_el.time - at)
+        new_el.area = float(new_el.load) * float(next_el.time - at)
         load_df.loc[prev_el.index, "area"] = \
-            float(prev_el.proc_alloc) * float(at - prev_el.time)
+            float(prev_el.load) * float(at - prev_el.time)
         load_df.loc[len(load_df)] = [
             float(new_el.time),
-            float(new_el.proc_alloc),
+            float(new_el.load),
             float(new_el.area)]
         load_df = load_df.sort_values(by=["time"])
     return load_df
 
 
 def load_mean(df, begin=None, end=None):
+    """ Compute the mean load area from begin to end. """
     load_df = df.reset_index()
     max_to = max(load_df.time)
     if end is None:
@@ -103,19 +122,24 @@ def load_mean(df, begin=None, end=None):
     load_df = _load_insert_element_if_necessary(load_df, begin)
     load_df = _load_insert_element_if_necessary(load_df, end)
 
-    u = load_df[load_df.time < end]
-    u = u[begin <= u.time]
+    u = load_df[(load_df.time < end) & (begin <= load_df.time)]
 
     return u.area.sum()/(end - begin)
 
 
-def fragmentation(free_resources_gaps):
+def fragmentation(free_resources_gaps, p=2, begin=None, end=None):
     """
-    input is a resource indexed list where each element is a numpy
+    Input is a resource indexed list where each element is a numpy
     array of free slots.
+
+    This metrics definition comes from Gher and Shneider CCGRID 2009.
     """
     f = free_resources_gaps
     frag = pd.Series()
     for i, fi in enumerate(f):
-        frag.set_value(i, 1 - (sum(fi**2) / sum(fi)**2))
+        if fi.size == 0:
+            frag_i = 0
+        else:
+            frag_i = 1 - (sum(fi**p) / sum(fi)**p)
+        frag.set_value(i, frag_i)
     return frag

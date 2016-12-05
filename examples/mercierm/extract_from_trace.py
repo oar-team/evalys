@@ -9,30 +9,43 @@ write 10 extracted periods by parameter combination to CSV files
 """
 
 from evalys import workload
+import pandas as pd
 import os
 
 
 def extract_periods(w, swf_trace):
 
     results_dir = "./results"
-    variation = 0.02
+    variation = 0.1
+    columns = ["file", "begin", "end", "norm_util", "variation",
+               "period_in_hours"]
+    metadata_map = pd.DataFrame(columns=columns)
 
     os.makedirs(results_dir, exist_ok=True)
-    for periods in [12, 60]:
+    for period in [60]:
 
         for util in range(1, 10):
             res_table = w.extract_periods_with_given_utilisation(
-                periods, util / 10, variation=variation)
+                period, util / 10, variation=variation, nb_max=20)
 
-            for results in res_table[:10]:
-                filename = "extracted_{}_{}H_{}util+-{}_{}.swf".format(
+            for i, results in enumerate(res_table):
+                filename = "extracted_{}_{}H_{}util+-{}_{}".format(
                     swf_trace,
-                    periods, util * 10,
+                    period, util * 10,
                     variation,
-                    results.UnixStartTime)
+                    i)
                 print("Export: {} \n{}".format(filename, results))
-                filepath = results_dir + "/" + filename
+                filepath = results_dir + "/" + filename + ".swf"
                 results.to_csv(filepath)
+                # Add metadata
+                metadata_map = metadata_map.append(
+                    [{"file": filename,
+                      "begin": results.ExtractBegin,
+                      "end": results.ExtractEnd,
+                      "norm_util": util / 10,
+                      "variation": variation,
+                      "period_in_hours": period}])
+    metadata_map.to_csv(results_dir + "/extract_metadata.csv", index=False)
 
 
 if __name__ == "__main__":

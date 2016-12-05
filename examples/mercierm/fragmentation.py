@@ -61,4 +61,4 @@ if __name__ == "__main__":
     arguments = docopt.docopt(__doc__)
     sns.set()
     compare_jobsets_fragmentation(arguments['<jobset_csv_files>'])
-    plt.show()
+    # plt.show()

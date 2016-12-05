@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 import re
 import datetime
 from evalys.metrics import compute_load, load_mean
+from evalys.utils import cut_workload
+from evalys import visu
 
 
 class Workload(object):
@@ -189,7 +191,7 @@ class Workload(object):
                          header=0, delim_whitespace=True)
         # sanitize trace
         # - remove job checkpoint information (job status != 0 or 1)
-        df = df[lambda x: x['status'] <= 1]
+        df = df[df['status'] <= 1]
 
         # process header
         header_file = open(filename, 'r')
@@ -253,73 +255,22 @@ class Workload(object):
         if self._utilisation is not None:
             return self._utilisation
 
-        self._utilisation = compute_load(self.df, 'starting_time', 'stop',
+        self._utilisation = compute_load(self.df,
+                                         'starting_time',
+                                         'finish_time',
                                          'proc_alloc', self.UnixStartTime)
         return self._utilisation
 
-    def plot_utilisation(self, ax=None, normalize=False):
-        '''
-        Plots the number of used resources against time
-        opt:
-            - normalize (bool) : normalize by the number of procs
-        '''
-        # make the time index a column
-        mean = load_mean(self.utilisation)
-        u = self.utilisation.reset_index()
-
-        # convert timestamp to datetime
-        u.index = pd.to_datetime(u['time'] + self.UnixStartTime,
-                                 unit='s')
-        u.index.tz_localize('UTC').tz_convert(self.TimeZoneString)
-
-        # get an axe if not provided
-        if ax is None:
-            ax = plt.gca()
-
-        # leave room to have better view
-        ax.margins(x=0.1, y=0.1)
-
-        if normalize:
-            u.proc_alloc = u.proc_alloc / self.MaxProcs
-            mean = mean / self.MaxProcs
-
-        # plot utilisation
-        u.proc_alloc.plot(drawstyle="steps", ax=ax)
-
-        # plot a line for max available area
-        if hasattr(self, "MaxProcs") and not normalize:
-            ax.plot([u.index[0], u.index[-1]],
-                    [self.MaxProcs, self.MaxProcs],
-                    linestyle='-', linewidth=2,
-                    label="Maximum resources ({})".format(self.MaxProcs))
-
-        # plot a line for mean utilisation
-        ax.plot([u.index[0], u.index[-1]],
-                [mean, mean],
-                linestyle='--', linewidth=2,
-                label="Mean resources utilisation ({0:.2f})".format(mean))
-
-    def plot_free_resources(self, normalize=False):
-        '''
-        Plots the number of free resources against time
-        opt:
-            - normalize (bool) : normalize by the number of procs
-        '''
-        free = self.MaxProcs - self.utilisation
-
-        if normalize:
-            free = free / self.MaxProcs
-
-        free.index = pd.to_datetime(free['time'] + self.UnixStartTime,
-                                    unit='s', utc=True,
-                                    )
-        free.index.tz_localize('UTC').tz_convert(self.TimeZoneString)
-
-        free.plot()
-        # plot a line for the number of procs
-        plt.plot([free.index[0], free.index[-1]],
-                 [self.MaxProcs, self.MaxProcs],
-                 color='k', linestyle='-', linewidth=2)
+    def plot(self):
+        _, axe = plt.subplots(nrows=2, sharex=True)
+        visu.plot_load(self.utilisation, self.MaxProcs, time_scale=True,
+                       UnixStartTime=self.UnixStartTime,
+                       TimeZoneString=self.TimeZoneString,
+                       load_label="utilisation", ax=axe[0])
+        visu.plot_load(self.queue, self.MaxProcs, time_scale=True,
+                       UnixStartTime=self.UnixStartTime,
+                       TimeZoneString=self.TimeZoneString,
+                       load_label="queue", ax=axe[1])
 
     def extract_periods_with_given_utilisation(self,
                                                period_in_hours,
@@ -358,37 +309,49 @@ class Workload(object):
         periods = mean_df.loc[
             lambda x: x.norm_mean_util >= (utilisation - variation)].loc[
                 lambda x: x.norm_mean_util <= (utilisation + variation)
-            ]["begin"]
+            ]
 
-        # reindex workload by start time to extract easily
-        df = self.df.copy()
-        df['starting_time'] = \
-            self.df['submission_time'] + self.df['waiting_time']
-        df = df.sort_values(by='starting_time').set_index(['starting_time'])
-
-        extracted = []
         # Only take nb_max periods if it is defined
         if nb_max:
             periods = periods[:nb_max]
-        for period_begin in periods:
-            begin = df.index.searchsorted(period_begin)
-            end = df.index.searchsorted(
-                period_begin + (period_in_hours * 60 * 60))
-            # Create a Workload object from extracted dataframe
-            to_export = df[begin:end].reset_index(drop=True)
-            # TODO export also the running and the queued jobs
+
+        notes = ("Period of {} hours with a mean utilisation "
+                 "of {}".format(period_in_hours, utilisation))
+        return self.extract(periods, notes)
+
+    def extract(self, periods, notes=""):
+        """ Extract workload periods from the given workload dataframe.
+        Returns a list of extracted Workloads. Some notes can be added to
+        the extracted workload. It will be stored in Notes attributs and
+        it will appear in the SWF header if you extract it to a file with
+        to_csv().
+
+        For example:
+        >>> from evalys.workload import Workload
+        >>> w = Workload.from_csv("./examples/UniLu-Gaia-2014-2.swf")
+        >>> periods = pd.DataFrame([{"begin": 200000, "end": 400000},
+        ...                         {"begin": 400000, "end": 600000}])
+        >>> extracted = w.extract(periods)
+        """
+
+        extracted = []
+
+        def do_extract(period):
+            to_export = cut_workload(self.df, period.begin, period.end)
             wl = Workload(to_export,
                           Conversion="Workload extracted using Evalys: "
                                      "https://github.com/oar-team/evalys",
                           Information=self.Information,
                           Computer=self.Computer,
                           Installation=self.Installation,
-                          Note="Period of {} hours with a mean utilisation "
-                               "of {}".format(period_in_hours, utilisation),
+                          Note=notes,
                           MaxProcs=self.MaxProcs,
-                          UnixStartTime=int(period_begin))
+                          UnixStartTime=int(period.begin),
+                          ExtractBegin=period.begin,
+                          ExtractEnd=period.end)
             extracted.append(wl)
 
+        periods.apply(do_extract, axis=1)
         return extracted
 
     @property
@@ -482,5 +445,5 @@ class Workload(object):
 
         grouped = self.df.groupby('proc_alloc')
         self._fraction_jobs_by_job_size = grouped['jobID'].agg(
-            {'jobs': lambda x: float(x.count())/self.nb_jobs})
+            {'jobs': lambda x: float(x.count())/len(self.df)})
         return self._fraction_jobs_by_job_size

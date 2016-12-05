@@ -3,7 +3,7 @@
 import argparse
 import matplotlib.pyplot as plt
 
-from evalys.visu import plot_load
+from evalys.visu import plot_processor_load as plot_load
 from evalys.jobset import JobSet
 
 
