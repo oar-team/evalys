@@ -16,6 +16,7 @@ def read(fname):
 
 readme = read('README.rst')
 changelog = read('CHANGES.rst').replace('.. :changelog:', '')
+authors = read('AUTHORS.rst')
 
 requirements = [
     'pandas',
