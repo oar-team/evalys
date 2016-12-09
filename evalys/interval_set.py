@@ -50,6 +50,7 @@ def _ids_to_itervals(ids):
 
 def string_to_interval_set(s):
     """Transforms a string interval set representation to interval set
+
     >>> string_to_interval_set("1 2 3 7-9 13")
     [(1, 3), (7, 9), (13, 13)]
     >>> string_to_interval_set("")
@@ -88,6 +89,7 @@ def string_to_interval_set(s):
 
 def interval_set_to_set(intervals):
     """ Convert interval set to python set
+
     >>> interval_set_to_set([])
     set()
     >>> interval_set_to_set([(1, 1), (3, 4)])
@@ -104,6 +106,7 @@ def interval_set_to_set(intervals):
 
 def set_to_interval_set(s):
     """ Convert python set to interval set
+
     >>> set_to_interval_set(set())
     []
     >>> set_to_interval_set({1, 2, 5, 7, 9, 10, 11})

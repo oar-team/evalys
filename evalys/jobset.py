@@ -6,7 +6,8 @@ from evalys.visu import plot_gantt
 from evalys.interval_set import \
         union, difference, intersection, string_to_interval_set, \
         interval_set_to_string, total
-from evalys.metrics import compute_load, load_mean, fragmentation
+from evalys.metrics import compute_load, load_mean, fragmentation, \
+        fragmentation_reis
 
 
 class JobSet(object):
@@ -15,7 +16,7 @@ class JobSet(object):
     the resources it is associated with.
 
     It takes a dataframe in input that are intended to have the columns
-    defined in JobSet.columns.
+    defined in :py::`~Queue.Queue.get`.
 
     The `allocated_processors` one should contain the string representation
     of an interval set of the allocated resources for the given job, i.e.
@@ -26,11 +27,12 @@ class JobSet(object):
         # strinf representation
         1-2 5 10-50
 
-    .. warn:: Floating point precision is set to `self.float_precision` so
-        all floating point values are rounded with this number of digits.
-        Defalut set to 6
+    .. warning:: Floating point precision is set to
+        :py:attr:`self.float_precision` so all floating point values are
+        rounded with this number of digits. Defalut set to 6
 
     For example:
+
     >>> from evalys.jobset import JobSet
     >>> js = JobSet.from_csv("./examples/jobs.csv")
     >>> js.gantt()
@@ -39,6 +41,7 @@ class JobSet(object):
     >>> # plt.show()
 
     You can also specify the the resource_bounds like this:
+
     >>> js = JobSet.from_csv("./examples/jobs.csv",
     ...                      resource_bounds=(0, 63))
     '''
@@ -101,6 +104,7 @@ class JobSet(object):
         """ Export this jobset to a csv file with a ',' as separator.
 
         Example:
+
         >>> from evalys.jobset import JobSet
         >>> js = JobSet.from_csv("./examples/jobs.csv")
         >>> js.to_csv("/tmp/jobs.csv")
@@ -138,8 +142,8 @@ class JobSet(object):
 
     def free_intervals(self, begin_time=0, end_time=None):
         '''
-        :return: a dataframe with the free resources over time. Each line
-        corespounding to an event in the jobset.
+        :returns: a dataframe with the free resources over time. Each line
+            corespounding to an event in the jobset.
         '''
         df = self.df
 
@@ -200,9 +204,9 @@ class JobSet(object):
 
     def free_slots(self, begin_time=0, end_time=None):
         '''
-        :return: a DataFrame (compatible with a JobSet) that contains all the
-        not overlapping square free slots of this JobSet maximzing the time.
-        it can be transform to a JobSet to be plot as gantt chart.
+        :returns: a DataFrame (compatible with a JobSet) that contains all
+            the not overlapping square free slots of this JobSet maximzing the
+            time. It can be transform to a JobSet to be plot as gantt chart.
         '''
         # slots_time contains tuple of
         # (slot_begin_time,free_resources_intervals)
@@ -265,19 +269,18 @@ class JobSet(object):
                       resource_intervals=None,
                       begin_time=0,
                       end_time=None):
-        return fragmentation(
+        return fragmentation_reis(
             self.free_resources_gaps(resource_intervals,
                                      begin_time, end_time),
-            p=p)
+            end_time - begin_time, p=p)
 
     def free_resources_gaps(self, resource_intervals=None,
                             begin_time=0, end_time=None):
         """
         :param resource_intervals: An interval set on which compute the
-        free resources gaps, Default: self.res_bounds
-        :return: a resource indexed list where each element is a numpy
-        array of free slots.
-
+            free resources gaps, Default: self.res_bounds
+        :returns: a resource indexed list where each element is a numpy
+            array of free slots.
         """
         js = self
         fs = js.free_slots(begin_time, end_time)
