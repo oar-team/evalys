@@ -236,8 +236,13 @@ class Workload(object):
         if self._queue is not None:
             return self._queue
 
+        # sometimes "proc_req" is not provided
+        if (self.df.proc_req == -1).any():
+            proc = "proc_alloc"
+        else:
+            proc = "proc_req"
         self._queue = compute_load(self.df, 'submission_time', 'starting_time',
-                                   'proc_req', self.UnixStartTime)
+                                   proc, self.UnixStartTime)
         return self._queue
 
     @property
@@ -261,16 +266,17 @@ class Workload(object):
                                          'proc_alloc', self.UnixStartTime)
         return self._utilisation
 
-    def plot(self):
+    def plot(self, normalize=False):
         _, axe = plt.subplots(nrows=2, sharex=True)
         visu.plot_load(self.utilisation, self.MaxProcs, time_scale=True,
                        UnixStartTime=self.UnixStartTime,
                        TimeZoneString=self.TimeZoneString,
-                       load_label="utilisation", ax=axe[0])
+                       load_label="utilisation", ax=axe[0],
+                       normalize=normalize)
         visu.plot_load(self.queue, self.MaxProcs, time_scale=True,
                        UnixStartTime=self.UnixStartTime,
                        TimeZoneString=self.TimeZoneString,
-                       load_label="queue", ax=axe[1])
+                       load_label="queue", ax=axe[1], normalize=normalize)
 
     def extract_periods_with_given_utilisation(self,
                                                period_in_hours,
