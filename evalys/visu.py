@@ -315,7 +315,7 @@ def plot_gantt_general_shape(jobset_list, ax=None, alpha=0.3):
 
 
 def plot_job_details(dataframe, size, ax=None, title="Job details",
-                     time_scale=False):
+                     time_scale=False, time_offset=0):
     # TODO manage also the Jobset case
     # Get current axe to plot
     if ax is None:
@@ -325,6 +325,7 @@ def plot_job_details(dataframe, size, ax=None, title="Job details",
     df = pd.DataFrame.copy(dataframe)
     df = df.sort_values(by='jobID')
 
+    df['submission_time'] = df['submission_time'] + time_offset
     df['starting_time'] = df['submission_time'] + df['waiting_time']
     df['finish_time'] = df['starting_time'] + df['execution_time']
 

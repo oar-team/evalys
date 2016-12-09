@@ -22,31 +22,38 @@ class Workload(object):
     '''
     This class is a derived from the SWF format. SWF is the default format
     for parallel workload defined here:
-    see: http://www.cs.huji.ac.il/labs/parallel/workload/swf.html
+    http://www.cs.huji.ac.il/labs/parallel/workload/swf.html
 
     the data format is one line per job, with 18 fields:
-     0 - Job Number, a counter field, starting from 1
-     1 - Submit Time, seconds. submittal time
-     2 - Wait Time, seconds. diff between submit and begin to run
-     3 - Run Time, seconds. end-time minus start-time
-     4 - Number of Processors, number of allocated processors
-     5 - Average CPU Time Used, seconds. user+system. avg over procs
-     6 - Used Memory, KB. avg over procs.
-     7 - Requested Number of Processors, requested number of
-         processors
-     8 - Requested Time, seconds. user runtime estimation
-     9 - Requested Memory, KB. avg over procs.
-    10 - status (1=completed, 0=killed), 0=fail; 1=completed;
-         5=canceled
-    11 - User ID, user id
-    12 - Group ID, group id
-    13 - Executable (Application) Number, [1,2..n] n = app#
-         appearing in log
-    14 - Queue Number, [1,2..n] n = queue# in the system
-    15 - Partition Number, [1,2..n] n = partition# in the systems
-    16 - Preceding Job Number,  cur job will start only after ...
-    17 - Think Time from Preceding Job, seconds should elapse
-         between termination of
+
+    0) Job Number, a counter field, starting from 1
+
+    1) Submit Time, seconds. submittal time
+    2) Wait Time, seconds. diff between submit and begin to run
+    3) Run Time, seconds. end-time minus start-time
+    4) Number of Processors, number of allocated processors
+    5) Average CPU Time Used, seconds. user+system. avg over procs
+    6) Used Memory, KB. avg over procs.
+    7) Requested Number of Processors, requested number of
+       processors
+    8) Requested Time, seconds. user runtime estimation
+    9) Requested Memory, KB. avg over procs.
+    10) status (1=completed, 0=killed), 0=fail; 1=completed; 5=canceled
+    11) User ID, user id
+    12) Group ID, group id
+    13) Executable (Application) Number, [1,2..n] n = app#
+        appearing in log
+    14) Queue Number, [1,2..n] n = queue# in the system
+    15) Partition Number, [1,2..n] n = partition# in the systems
+    16) Preceding Job Number,  cur job will start only after ...
+    17) Think Time from Preceding Job, seconds should elapse
+        between termination of this preceding job. Together with the next
+        field, this allows the workload to include feedback as described
+        below.
+    18) Think Time from Preceding Job -- this is the number of seconds that
+        should elapse between the termination of the preceding job and the
+        submittal of this one.
+
     '''
     metadata = {
      'Version': '''
@@ -182,6 +189,10 @@ class Workload(object):
 
     @classmethod
     def from_csv(cls, filename):
+        '''
+        Import SWF CSV file.
+        :param filename: SWF file path
+        '''
         columns = ['jobID', 'submission_time', 'waiting_time',
                    'execution_time', 'proc_alloc', 'cpu_used', 'mem_used',
                    'proc_req', 'user_est', 'mem_req', 'status', 'uid',
@@ -212,6 +223,7 @@ class Workload(object):
     def to_csv(self, filename):
         '''
         Export the workload as SWF format CSV file
+        :param filename: exported SWF file path
         '''
         # Write metadata
         metadata = ""
@@ -227,8 +239,9 @@ class Workload(object):
     @property
     def queue(self):
         '''
-        Calculate cluster queue size over time in number of procs
-        returns:
+        Calculate cluster queue size over time in number of procs.
+
+        :returns:
             a time indexed serie that contain the number of used processors
             It is based on real time if UnixStartTime is defined
         '''
@@ -250,11 +263,13 @@ class Workload(object):
         '''
         Calculate cluster utilisation over time:
             nb procs used / nb procs available
-        returns:
+
+        :returns:
             a time indexed serie that contain the number of used processors
             It is based on real time
+
         TODO: Add ID list of jobs running and ID list of jobs in queue to
-        the returned dataframe
+            the returned dataframe
         '''
         # Do not re-compute everytime
         if self._utilisation is not None:
@@ -267,6 +282,7 @@ class Workload(object):
         return self._utilisation
 
     def plot(self, normalize=False):
+        ''' Plot queue and utilisation information. '''
         _, axe = plt.subplots(nrows=2, sharex=True)
         visu.plot_load(self.utilisation, self.MaxProcs, time_scale=True,
                        UnixStartTime=self.UnixStartTime,
@@ -286,7 +302,8 @@ class Workload(object):
         '''
         This extract from the workload a period (in hours) with a given mean
         utilisation (between 0 and 1).
-        returns:
+
+        :returns:
             a list of workload of the given periods, with the given
             utilisation, extracted from the this workload.
         '''
@@ -326,13 +343,15 @@ class Workload(object):
         return self.extract(periods, notes)
 
     def extract(self, periods, notes=""):
-        """ Extract workload periods from the given workload dataframe.
+        """
+        Extract workload periods from the given workload dataframe.
         Returns a list of extracted Workloads. Some notes can be added to
         the extracted workload. It will be stored in Notes attributs and
         it will appear in the SWF header if you extract it to a file with
         to_csv().
 
         For example:
+
         >>> from evalys.workload import Workload
         >>> w = Workload.from_csv("./examples/UniLu-Gaia-2014-2.swf")
         >>> periods = pd.DataFrame([{"begin": 200000, "end": 400000},
@@ -344,7 +363,7 @@ class Workload(object):
 
         def do_extract(period):
             to_export = cut_workload(self.df, period.begin, period.end)
-            wl = Workload(to_export,
+            wl = Workload(to_export["workload"],
                           Conversion="Workload extracted using Evalys: "
                                      "https://github.com/oar-team/evalys",
                           Information=self.Information,

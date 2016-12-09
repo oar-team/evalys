@@ -1,4 +1,5 @@
 import pandas as pd
+from math import sqrt
 
 
 def cumulative_waiting_time(dataframe):
@@ -6,7 +7,7 @@ def cumulative_waiting_time(dataframe):
     Compute the cumulative waiting time on the given dataframe
 
     :dataframe: a DataFrame that contains a "starting_time" and a
-    "waiting_time" column.
+        "waiting_time" column.
     '''
     # Avoid side effect
     df = pd.DataFrame.copy(dataframe)
@@ -29,7 +30,7 @@ def compute_load(dataframe, col_begin, col_end, col_cumsum,
     load and the cluster load (utilisation).
 
     :returns: a load dataframe of all events indexed by time with a `load`
-    and an `area` column.
+        and an `area` column.
     """
     # Avoid side effect
     df = pd.DataFrame.copy(dataframe)
@@ -127,7 +128,7 @@ def load_mean(df, begin=None, end=None):
     return u.area.sum()/(end - begin)
 
 
-def fragmentation(free_resources_gaps, p=2, begin=None, end=None):
+def fragmentation(free_resources_gaps, p=2):
     """
     Input is a resource indexed list where each element is a numpy
     array of free slots.
@@ -141,5 +142,17 @@ def fragmentation(free_resources_gaps, p=2, begin=None, end=None):
             frag_i = 0
         else:
             frag_i = 1 - (sum(fi**p) / sum(fi)**p)
+        frag.set_value(i, frag_i)
+    return frag
+
+
+def fragmentation_reis(free_resources_gaps, time, p=2):
+    f = free_resources_gaps
+    frag = pd.Series()
+    for i, fi in enumerate(f):
+        if fi.size == 0:
+            frag_i = 0
+        else:
+            frag_i = 1 - (sqrt(sum(fi**p)) / time * len(f))
         frag.set_value(i, frag_i)
     return frag
