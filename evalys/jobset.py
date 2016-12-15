@@ -306,7 +306,7 @@ class JobSet(object):
         return fragmentation(
             self.free_resources_gaps(resource_intervals,
                                      begin_time, end_time),
-            end_time - begin_time, p=p)
+            p=p)
 
     def free_resources_gaps(self, resource_intervals=None,
                             begin_time=0, end_time=None):
