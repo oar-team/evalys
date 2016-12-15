@@ -48,5 +48,6 @@ You can find a lot of examples in the `./examples` directory.
 Gallery
 -------
 
+.. image:: _static/jobset_plot.png
 .. image:: _static/gantt_comparison.svg
 

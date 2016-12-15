@@ -2,12 +2,12 @@
 from __future__ import unicode_literals, print_function
 import pandas as pd
 import numpy as np
-from evalys.visu import plot_gantt
+import matplotlib.pyplot as plt
+from evalys import visu
 from evalys.interval_set import \
         union, difference, intersection, string_to_interval_set, \
         interval_set_to_string, total
-from evalys.metrics import compute_load, load_mean, fragmentation, \
-        fragmentation_reis
+from evalys.metrics import compute_load, load_mean, fragmentation
 
 
 class JobSet(object):
@@ -16,7 +16,7 @@ class JobSet(object):
     the resources it is associated with.
 
     It takes a dataframe in input that are intended to have the columns
-    defined in :py::`~Queue.Queue.get`.
+    defined in :py::`JobSet.columns`.
 
     The `allocated_processors` one should contain the string representation
     of an interval set of the allocated resources for the given job, i.e.
@@ -59,6 +59,10 @@ class JobSet(object):
                 max([e for x in self.df.allocated_processors
                      for (b, e) in x]))
 
+        self.MaxProcs = total([self.res_bounds])
+
+        self.df['proc_alloc'] = self.df.allocated_processors.apply(total)
+
         # Add missing columns
         if 'starting_time' not in self.df.columns:
             self.df['starting_time'] = \
@@ -71,6 +75,7 @@ class JobSet(object):
 
         # init cache
         self._utilisation = None
+        self._queue = None
 
     __converters = {
         'jobID': str,
@@ -117,19 +122,48 @@ class JobSet(object):
                       float_format='%.{}f'.format(self.float_precision))
 
     def gantt(self, ax=None, title="Gantt chart"):
-        plot_gantt(self, ax, title)
+        visu.plot_gantt(self, ax, title)
 
     @property
     def utilisation(self):
         if self._utilisation is not None:
             return self._utilisation
-        df = self.df.copy()
-        df['proc_alloc'] = df.allocated_processors.apply(total)
-        self._utilisation = compute_load(df,
+        self._utilisation = compute_load(self.df,
                                          col_begin='starting_time',
                                          col_end='finish_time',
                                          col_cumsum='proc_alloc')
         return self._utilisation
+
+    @property
+    def queue(self):
+        '''
+        Calculate cluster queue size over time in number of procs.
+
+        :returns:
+            a time indexed serie that contain the number of used processors
+        '''
+        # Do not re-compute everytime
+        if self._queue is not None:
+            return self._queue
+
+        proc = "requested_number_of_processors"
+        self._queue = compute_load(self.df, 'submission_time', 'starting_time',
+                                   proc)
+        return self._queue
+
+    def plot(self, normalize=False, with_details=False):
+        nrows = 2
+        if with_details:
+            nrows = nrows + 2
+        _, axe = plt.subplots(nrows=nrows, sharex=True)
+        visu.plot_load(self.utilisation, self.MaxProcs,
+                       load_label="utilisation", ax=axe[0],
+                       normalize=normalize)
+        visu.plot_load(self.queue, self.MaxProcs,
+                       load_label="queue", ax=axe[1], normalize=normalize)
+        if with_details:
+            visu.plot_job_details(self.df, self.MaxProcs, ax=axe[2])
+            self.gantt(ax=axe[3])
 
     def detailed_utilisation(self):
         df = self.free_intervals()
@@ -269,7 +303,7 @@ class JobSet(object):
                       resource_intervals=None,
                       begin_time=0,
                       end_time=None):
-        return fragmentation_reis(
+        return fragmentation(
             self.free_resources_gaps(resource_intervals,
                                      begin_time, end_time),
             end_time - begin_time, p=p)
