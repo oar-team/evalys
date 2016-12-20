@@ -17,10 +17,9 @@ def read(fname):
 readme = read('README.rst')
 changelog = read('CHANGES.rst').replace('.. :changelog:', '')
 
-#requirements = [
-#    'pandas',
-#    'matplotlib',
-#]
+requirements = [
+   "seaborn",
+]
 
 version = ''
 version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
@@ -38,7 +37,7 @@ setup(
     version=version,
     url='https://github.com/oar-team/evalys',
     packages=find_packages(),
-    #install_requires=requirements,
+    install_requires=requirements,
     include_package_data=True,
     zip_safe=False,
     description="Infrastructure Performance Evaluation Toolkit",
