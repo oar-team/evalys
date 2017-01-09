@@ -36,7 +36,7 @@ def annotate(ax, rect, annot):
 
 
 def plot_gantt(jobset, ax=None, title="Gantt chart",
-               labels=True, palette=None, alpha=0.3):
+               labels=True, palette=None, alpha=0.3, time_scale=False):
     # Palette generation if needed
     if palette is None:
         palette = generate_color_set(16)
@@ -46,28 +46,34 @@ def plot_gantt(jobset, ax=None, title="Gantt chart",
     if ax is None:
         ax = plt.gca()
 
-    jobset.df["unique_number"] = np.arange(0, len(jobset.df))
+    df = jobset.df.copy()
+    df["unique_number"] = np.arange(0, len(df))
+
+    if time_scale:
+        df['submission_time'] = pd.to_datetime(df['submission_time'], unit='s')
+        df['starting_time'] = pd.to_datetime(df['starting_time'], unit='s')
 
     def plot_job(job):
         col = palette[job.unique_number % len(palette)]
         duration = job['execution_time']
         for itv in job['allocated_processors']:
             (y0, y1) = itv
-            rect = mpatch.Rectangle((job['starting_time'], y0), duration,
+            x0 = job['starting_time']
+            if time_scale:
+                # Convert date to matplotlib float representation
+                x0 = x0.to_pydatetime()
+            rect = mpatch.Rectangle((x0, y0), duration,
                                     y1 - y0 + 0.9, alpha=alpha, color=col)
             if labels:
                 annotate(ax, rect, str(job['jobID']))
             ax.add_artist(rect)
 
     # apply for all jobs
-    jobset.df.apply(plot_job, axis=1)
-
-    # clean jobset
-    del jobset.df["unique_number"]
+    df.apply(plot_job, axis=1)
 
     # set graph limits, grid and title
-    ax.set_xlim(jobset.df['starting_time'].min(), (
-        jobset.df['starting_time'] + jobset.df['execution_time']).max())
+    ax.set_xlim(df['starting_time'].min(), (
+        df['starting_time'] + df['execution_time']).max())
     ax.set_ylim(jobset.res_bounds[0]-1, jobset.res_bounds[1]+1)
     ax.grid(True)
     ax.set_title(title)
@@ -436,11 +442,12 @@ def plot_load(load, nb_resources=None, ax=None, normalize=False,
     :normalize: if True normalize by the number of resources
     `nb_resources`
     '''
-    # make the time index a column
     mean = metrics.load_mean(load)
-    u = load.reset_index()
+    u = load.copy()
 
     if time_scale:
+        # make the time index a column
+        u = u.reset_index()
         # convert timestamp to datetime
         u.index = pd.to_datetime(u['time'] + UnixStartTime,
                                  unit='s')
@@ -461,7 +468,7 @@ def plot_load(load, nb_resources=None, ax=None, normalize=False,
     ax.margins(x=0.1, y=0.1)
 
     # plot load
-    u.load.plot(drawstyle="steps", ax=ax, label=load_label)
+    u.load.plot(drawstyle="steps-post", ax=ax, label=load_label)
 
     # plot a line for max available area
     if nb_resources and not normalize:

@@ -46,7 +46,8 @@ def compute_load(dataframe, col_begin, col_end, col_cumsum,
     max_time = df['finish_time'].max() + 1000
     df.ix[df['execution_time'] == -1, 'finish_time'] = max_time
     df.ix[df['execution_time'] == -1, 'starting_time'] = max_time
-    df = df[df['proc_alloc'] > 0]
+    if 'proc_alloc' in df:
+        df = df[df['proc_alloc'] > 0]
 
     # Create a list of start and stop event associated to the number of
     # proc allocation changes: starts add procs, stop remove procs

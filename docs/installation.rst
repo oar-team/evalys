@@ -4,8 +4,10 @@ Installation
 
 Requirements:
 
-- python >= 2.7
-- PyQt4
+- python >= 3.4
+- pandas >= 17
+- matplotlib
+- seaborn
 
 You can install, upgrade, uninstall evalys with these commands::
 

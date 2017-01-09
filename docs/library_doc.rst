@@ -1,3 +1,5 @@
+.. _`library_doc`:
+
 Evalys module documentation
 ===========================
 

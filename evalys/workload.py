@@ -281,9 +281,18 @@ class Workload(object):
                                          'proc_alloc', self.UnixStartTime)
         return self._utilisation
 
-    def plot(self, normalize=False):
-        ''' Plot queue and utilisation information. '''
-        _, axe = plt.subplots(nrows=2, sharex=True)
+    def plot(self, normalize=False, with_details=False):
+        """
+        Plot workload general informations.
+
+        :args with_details:
+            if True show the job submission, start and finish time
+            (Warning: don't use this on large traces.
+        """
+        nrows = 2
+        if with_details:
+            nrows = nrows + 1
+        _, axe = plt.subplots(nrows=nrows, sharex=True)
         visu.plot_load(self.utilisation, self.MaxProcs, time_scale=True,
                        UnixStartTime=self.UnixStartTime,
                        TimeZoneString=self.TimeZoneString,
@@ -293,6 +302,9 @@ class Workload(object):
                        UnixStartTime=self.UnixStartTime,
                        TimeZoneString=self.TimeZoneString,
                        load_label="queue", ax=axe[1], normalize=normalize)
+        if with_details:
+            visu.plot_job_details(self.df, self.MaxProcs, time_scale=True,
+                                  time_offset=self.UnixStartTime)
 
     def extract_periods_with_given_utilisation(self,
                                                period_in_hours,
