@@ -1,8 +1,3 @@
-#! /usr/bin/env nix-shell
-#! nix-shell -i python3 ../default.nix
-
-# -*- coding: utf-8 -*-
-
 '''
     Interactively explore the difference between two schedules of the same trace.
 
@@ -28,13 +23,13 @@ fig, axes = plt.subplots(nrows=5, ncols=1, sharex=True)
 w = workload.Workload.from_csv(arguments["<swf_file1>"])
 w0 = workload.Workload.from_csv(arguments["<swf_file2>"])
 
-visu.plot_series_comparison({arguments["<swf_file1>"]: w.utilisation,
-                             arguments["<swf_file2>"]: w0.utilisation},
+visu.plot_series_comparison({arguments["<swf_file1>"]: w.utilisation.load,
+                             arguments["<swf_file2>"]: w0.utilisation.load},
                             axes[0],
                             "Utilisation comparison")
 
-visu.plot_series_comparison({arguments["<swf_file1>"]: w.queue,
-                             arguments["<swf_file2>"]: w0.queue},
+visu.plot_series_comparison({arguments["<swf_file1>"]: w.queue.load,
+                             arguments["<swf_file2>"]: w0.queue.load},
                             axes[1],
                             "Queue comparison")
 

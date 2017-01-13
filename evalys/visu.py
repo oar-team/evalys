@@ -391,7 +391,7 @@ def plot_series_comparison(series, ax=None, title="Series comparison"):
     second_serie = list(series.values())[1]
     second_serie.plot(drawstyle="steps-post", ax=ax, label=second_serie_name)
 
-    df = pd.DataFrame(series).fillna(method='ffill')
+    df = pd.DataFrame(series, index=first_serie.index).fillna(method='ffill')
     y1 = df[first_serie_name]
     y2 = df[second_serie_name]
     ax.fill_between(df.index, y1, y2, where=y2 < y1, facecolor='red',
