@@ -1,5 +1,5 @@
 """
-Functions to manage and convert and intervals set.
+Functions to manage and convert intervals set.
 
 An interval is a tuple (begin, end). An interval of 1 element where eID is the
 element ID is formated (eID, eID).
@@ -82,6 +82,7 @@ def string_to_interval_set(s):
 
     return aggregate(intervals)
 
+
 #
 # Set conversion
 #
@@ -134,6 +135,7 @@ def set_to_interval_set(s):
 
     return intervals
 
+
 #
 # Info operations
 #
@@ -154,9 +156,29 @@ def total(itvs):
     # Add +1 because it is a closed interval
     return sum([(end - begin) + 1 for begin, end in itvs])
 
+
 #
 # Ensemble operations
 #
+
+
+def equals(itvs1, itvs2):
+    """ Check for equality between two interval sets
+
+    TODO: this version is working bu it is not optimized...
+
+    >>> equals([],[])
+    True
+    >>> equals([(1, 1)],[(1, 2)])
+    False
+    >>> equals([(1, 10)],[])
+    False
+    >>> equals([(1, 2), (3, 4)], [(1, 4)])
+    True
+    >>> equals([(5, 100), (3, 4)], [(3, 4), (5, 100)])
+    True
+    """
+    return interval_set_to_set(itvs1) == interval_set_to_set(itvs2)
 
 
 def difference(itvs_base, itvs2):
@@ -214,37 +236,6 @@ def difference(itvs_base, itvs2):
     return itvs
 
 
-def aggregate(itvs):
-    """Aggregate not overlapping intervals (intersect must be empty) to remove gap.
-
-    >>> aggregate([])
-    []
-    >>> aggregate([(1, 2), (3, 4)])
-    [(1, 4)]
-    """
-    lg = len(itvs)
-    if lg <= 1:
-        return itvs
-
-    # TODO check overlapping
-
-    res = []
-    i = 1
-    a, b = itvs[0]
-    while True:
-        if i == lg:
-            res.append((a, b))
-            return res
-        else:
-            x, y = itvs[i]
-            if x == (b + 1):
-                b = y
-            else:
-                res.append((a, b))
-                a, b = x, y
-            i += 1
-
-
 def intersection(itvs1, itvs2):
     """Returns an interval set that is an intersection of itvs1 and itvs2.
 
@@ -299,7 +290,9 @@ def intersection(itvs1, itvs2):
 
 
 def union(itvs1, itvs2):
-    """ Returns the union of two interval sets
+    """ Do the union of two interval sets
+
+    TODO: this version is working bu it is not optimized...
 
     >>> union([(1, 1), (3, 4)], [(1, 2), (4, 7)])
     [(1, 7)]
@@ -310,3 +303,33 @@ def union(itvs1, itvs2):
     diff21 = difference(itvs2, itvs1)
     union = aggregate(sorted(intersect + diff12 + diff21))
     return union
+
+
+def aggregate(itvs):
+    """Aggregate *NOT overlapping* intervals (intersect must be empty) to
+    remove gaps.
+
+    >>> aggregate([])
+    []
+    >>> aggregate([(1, 2), (3, 4)])
+    [(1, 4)]
+    """
+    lg = len(itvs)
+    if lg <= 1:
+        return itvs
+
+    res = []
+    i = 1
+    a, b = itvs[0]
+    while True:
+        if i == lg:
+            res.append((a, b))
+            return res
+        else:
+            x, y = itvs[i]
+            if x == (b + 1):
+                b = y
+            else:
+                res.append((a, b))
+                a, b = x, y
+            i += 1
