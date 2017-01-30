@@ -36,13 +36,3 @@ Utilities
 
 .. automodule:: evalys.utils
    :members:
-
-
-Interval set
-------------
-
-.. automodule:: evalys.interval_set
-   :members:
-
-
-

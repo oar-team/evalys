@@ -11,7 +11,7 @@ import random
 import colorsys
 
 from evalys import metrics
-from evalys.interval_set import interval_set_to_set, string_to_interval_set
+from interval_set.interval_set import interval_set_to_set, string_to_interval_set
 
 
 # plt.style.use('ggplot')

@@ -22,6 +22,7 @@ requirements = [
     "pandas",
     "matplotlib",
     "seaborn",
+    "interval_set",
 ]
 
 version = ''

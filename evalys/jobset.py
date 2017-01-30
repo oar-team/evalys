@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from evalys import visu
-from evalys.interval_set import \
+from interval_set.interval_set import \
         union, difference, intersection, string_to_interval_set, \
         interval_set_to_string, total
 from evalys.metrics import compute_load, load_mean, fragmentation_reis
