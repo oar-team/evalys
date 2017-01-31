@@ -4,10 +4,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from evalys import visu
-from evalys.interval_set import \
+from interval_set.interval_set import \
         union, difference, intersection, string_to_interval_set, \
         interval_set_to_string, total
-from evalys.metrics import compute_load, load_mean, fragmentation
+from evalys.metrics import compute_load, load_mean, fragmentation_reis
 
 
 class JobSet(object):
@@ -303,10 +303,15 @@ class JobSet(object):
                       resource_intervals=None,
                       begin_time=0,
                       end_time=None):
-        return fragmentation(
+        #return fragmentation(
+        #    self.free_resources_gaps(resource_intervals,
+        #                             begin_time, end_time),
+        #    p=p)
+
+        return fragmentation_reis(
             self.free_resources_gaps(resource_intervals,
                                      begin_time, end_time),
-            p=p)
+            end_time - begin_time, p=p)
 
     def free_resources_gaps(self, resource_intervals=None,
                             begin_time=0, end_time=None):

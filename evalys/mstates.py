@@ -1,7 +1,7 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
 import pandas as pd
-from evalys.interval_set import string_to_interval_set, interval_set_to_set, \
+from interval_set.interval_set import string_to_interval_set, interval_set_to_set, \
                           set_to_interval_set, interval_set_to_string
 
 class MachineStatesChanges(object):

@@ -54,13 +54,13 @@ clean-test:  ## Eemove test and coverage artifacts
 	rm -fr htmlcov/
 
 test:  ## Run tests quickly with the default Python
-	py.test tests/*test_*.py evalys/*.py
+	py.test tests/*test_*.py
 
 ci:  ## Run all tests and get junitxml report for CI (Travis, Jenkins...)
-	py.test --junitxml=junit.xml tests/*test_*.py evalys/*.py
+	py.test --junitxml=junit.xml tests/*test_*.py
 
 coverage: ## Check code coverage quickly with the default Python
-	py.test --verbose --cov-report term --cov-report html --cov=evalys tests/*test_*.py evalys/*.py || true
+	py.test --verbose --cov-report term --cov-report html --cov=evalys || true
 	$(open) htmlcov/index.html
 
 lint:  ## Check style with flake8
