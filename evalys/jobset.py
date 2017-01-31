@@ -71,6 +71,9 @@ class JobSet(object):
             self.df['finish_time'] = \
                 self.df['starting_time'] + self.df['execution_time']
 
+        if 'job_id' in self.df.columns:
+            self.df.rename(columns={'job_id':'jobID'}, inplace=True)
+
         # TODO check consistency on calculated columns...
 
         # init cache
@@ -79,6 +82,7 @@ class JobSet(object):
 
     __converters = {
         'jobID': str,
+        'job_id': str,
         'allocated_processors': str,
     }
 
