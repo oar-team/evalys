@@ -162,9 +162,9 @@ class Workload(object):
             # cast integer
             if key.startswith('Max'):
                 try:
-                    value = int(value)
+                    value = int(re.search(r'\d+', value).group())
                     setattr(self, key, value)
-                except ValueError:
+                except:
                     print("WARNING: unable to get \"{}\" integer value. Found"
                           " value: {}".format(key, value))
             else:
