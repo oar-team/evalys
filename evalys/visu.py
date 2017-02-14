@@ -85,6 +85,7 @@ def plot_pstates(pstates, x_horizon, ax=None, palette=None,
     if palette is None:
         palette = ["#000000", "#56ae6c", "#ba495b"]
     assert(len(palette) >= 3)
+    labels = ["OFF", "switch ON", "switch OFF"]
     alphas = [0.6, 1, 1]
 
     # Get current axe to plot
@@ -104,13 +105,15 @@ def plot_pstates(pstates, x_horizon, ax=None, palette=None,
 
             color = palette[col_id]
             alpha = alphas[col_id]
+            label = labels[col_id]
 
             interval_list = pstates.intervals[job['interval_id']]
             for machine_interval in interval_list:
                 (y0, y1) = machine_interval
                 (b, e) = (job['begin'], min(job['end'], x_horizon))
                 rect = mpatch.Rectangle((b, y0), e - b, y1 - y0 + 0.9,
-                                        color=color, alpha=alpha)
+                                        color=color, alpha=alpha,
+                                        label=label)
                 ax.add_artist(rect)
 
 
@@ -197,20 +200,16 @@ def plot_processor_load(jobset, ax=None, title="Load", labels=True):
         ax.add_artist(rect)
 
     RGB_tuples = generate_color_set(16)
-    load = {p: 0.0 for p in range(*jobset.res_bounds)}
+    load = {
+        p: 0.0 for p in range(jobset.res_bounds[0], jobset.res_bounds[1] + 1)
+    }
 
     for row in jobset.df.itertuples():
         color = RGB_tuples[row.Index % len(RGB_tuples)]
         duration = row.execution_time
         label = row.jobID if labels else None
 
-        procset = sorted(
-            interval_set_to_set(
-                string_to_interval_set(
-                    str(row.allocated_processors)
-                )
-            )
-        )
+        procset = sorted(interval_set_to_set(row.allocated_processors))
         base = (procset[0], load[procset[0]])
         width = 0  # width is incremented in the first loop iteration
         for proc in procset:

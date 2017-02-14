@@ -281,7 +281,7 @@ class Workload(object):
                                          'proc_alloc', self.UnixStartTime)
         return self._utilisation
 
-    def plot(self, normalize=False, with_details=False):
+    def plot(self, normalize=False, with_details=False, time_scale=False):
         """
         Plot workload general informations.
 
@@ -293,17 +293,17 @@ class Workload(object):
         if with_details:
             nrows = nrows + 1
         _, axe = plt.subplots(nrows=nrows, sharex=True)
-        visu.plot_load(self.utilisation, self.MaxProcs, time_scale=True,
+        visu.plot_load(self.utilisation, self.MaxProcs, time_scale=time_scale,
                        UnixStartTime=self.UnixStartTime,
                        TimeZoneString=self.TimeZoneString,
                        load_label="utilisation", ax=axe[0],
                        normalize=normalize)
-        visu.plot_load(self.queue, self.MaxProcs, time_scale=True,
+        visu.plot_load(self.queue, self.MaxProcs, time_scale=time_scale,
                        UnixStartTime=self.UnixStartTime,
                        TimeZoneString=self.TimeZoneString,
                        load_label="queue", ax=axe[1], normalize=normalize)
         if with_details:
-            visu.plot_job_details(self.df, self.MaxProcs, time_scale=True,
+            visu.plot_job_details(self.df, self.MaxProcs, time_scale=time_scale,
                                   time_offset=self.UnixStartTime)
 
     def extract_periods_with_given_utilisation(self,
