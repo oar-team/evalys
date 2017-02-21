@@ -63,13 +63,18 @@ class JobSet(object):
 
         self.df['proc_alloc'] = self.df.allocated_processors.apply(total)
 
-        # Add missing columns
-        if 'starting_time' not in self.df.columns:
-            self.df['starting_time'] = \
-                self.df['submission_time'] + self.df['waiting_time']
-        if 'finish_time' not in self.df.columns:
-            self.df['finish_time'] = \
-                self.df['starting_time'] + self.df['execution_time']
+        # Add missing columns if possible
+        fillable = all(
+            col in self.df.columns
+            for col in ['submission_time', 'waiting_time', 'execution_time']
+        )
+        if fillable:
+            if 'starting_time' not in self.df.columns:
+                self.df['starting_time'] = \
+                    self.df['submission_time'] + self.df['waiting_time']
+            if 'finish_time' not in self.df.columns:
+                self.df['finish_time'] = \
+                    self.df['starting_time'] + self.df['execution_time']
 
         if 'job_id' in self.df.columns:
             self.df.rename(columns={'job_id':'jobID'}, inplace=True)
