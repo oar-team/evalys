@@ -22,7 +22,7 @@ requirements = [
     "pandas",
     "matplotlib",
     "seaborn",
-    "interval_set",
+    "procset",
 ]
 
 version = ''
