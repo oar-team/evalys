@@ -28,7 +28,7 @@ class PowerStatesChanges(object):
 
             for res in res_set:
                 assert(res not in current_pstate),"Invalid input file: multiple initialization of "\
-                                                  "machine {res}".format(res)
+                                                  "machine {}".format(res)
                 current_pstate[res] = (pstate, time)
 
         # Let's add a finish row
