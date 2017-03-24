@@ -11,7 +11,7 @@ import random
 import colorsys
 
 from evalys import metrics
-from intsetwrap import interval_set_to_set, string_to_interval_set
+from procset import ProcSet
 
 
 # plt.style.use('ggplot')
@@ -56,7 +56,7 @@ def plot_gantt(jobset, ax=None, title="Gantt chart",
     def plot_job(job):
         col = palette[job.unique_number % len(palette)]
         duration = job['execution_time']
-        for itv in job['allocated_processors']:
+        for itv in job['allocated_processors'].intervals():
             (y0, y1) = itv
             x0 = job['starting_time']
             if time_scale:
@@ -209,10 +209,10 @@ def plot_processor_load(jobset, ax=None, title="Load", labels=True):
         duration = row.execution_time
         label = row.jobID if labels else None
 
-        procset = sorted(interval_set_to_set(row.allocated_processors))
-        base = (procset[0], load[procset[0]])
+        baseproc = next(iter(row.allocated_processors))
+        base = (baseproc, load[baseproc])
         width = 0  # width is incremented in the first loop iteration
-        for proc in procset:
+        for proc in row.allocated_processors:
             if base[0] + width != proc or load[proc] != base[1]:
                 # we cannot merge across processors: draw the current
                 # rectangle, and start anew
@@ -296,7 +296,7 @@ def plot_gantt_general_shape(jobset_list, ax=None, alpha=0.3):
 
         def plot_job(job):
             duration = job['execution_time']
-            for itv in job['allocated_processors']:
+            for itv in job['allocated_processors'].intervals():
                 (y0, y1) = itv
                 rect = mpatch.Rectangle((job['starting_time'], y0), duration,
                                         y1 - y0 + 0.9, alpha=alpha,
