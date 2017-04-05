@@ -1,0 +1,2 @@
+consumed_joules,makespan,max_slowdown,max_turnaround_time,max_waiting_time,mean_slowdown,mean_turnaround_time,mean_waiting_time,nb_computing_machines,nb_jobs,nb_jobs_finished,nb_jobs_killed,nb_jobs_success,scheduling_time,simulation_time,success_rate,time_computing,time_idle,time_sleeping,time_switching_off,time_switching_on
+28459842.538244,16589.162478,1798.349037,5942.271897,5429.568304,45.934843,1885.686111,1734.275365,32,801,801,0,801,4.132574,4.668536,1.000000,256450.464000,8504.487481,0.000000,97.600000,0.000000

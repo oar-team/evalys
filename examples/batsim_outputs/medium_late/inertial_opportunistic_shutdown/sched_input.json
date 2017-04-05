@@ -1,0 +1,23 @@
+{
+  "output_dir":"/tmp/batsched_ft/results/86405a0e",
+  "trace_output_filename":"/tmp/batsched_ft/results/86405a0e/sched_load_log.csv",
+
+  "inertial_alteration":"x2",
+  "upper_llh_threshold":10e4,
+  "monitoring_period":60,
+  "idle_time_to_sedate":0e1,
+  "sedate_idle_on_classical_events":true,
+
+  "ensured_sleep_time_lower_bound":0e1,
+  "ensured_sleep_time_upper_bound":0e1,
+
+  "power_sleep":9.75,
+  "power_idle":95,
+  "energy_switch_on":19030,
+  "power_compute":190.738,
+  "energy_switch_off":620,
+  "time_switch_off":6.1,
+  "pstate_sleep":13,
+  "pstate_compute":0,
+  "time_switch_on":152
+}
