@@ -140,4 +140,6 @@ def main():
         plt.show()
 
 if __name__ == "__main__":
+    print("WARNING: this command line interface is deprecated. Please, use "
+          "evalys as a library instead.\nSee http://evalys.rtfd.io")
     main()
