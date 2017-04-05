@@ -38,10 +38,18 @@ Features
 Examples
 --------
 
-You can get a simple example directly by running this::
+You can get a simple example directly by running ipython and discover the
+evalys interface. For example::
 
-   cd examples
-   ipython --matplotlib qt -i example1.py
+  from evalys.jobset import JobSet
+  import matplotlib.pyplot as plt
+
+  js = JobSet.from_csv("evalys/examples/jobs.csv")
+  js.plot(with_details=True)
+  plt.show()
+
+This also works for SWF files but the Gantt chart is not provided because
+job placement information is not provided in this format.
 
 You can find a lot of examples in the `./examples` directory.
 
