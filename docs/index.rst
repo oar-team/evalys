@@ -4,20 +4,18 @@
    contain the root `toctree` directive.
 
 Welcome to Evalys's documentation!
-======================================
+==================================
+
+.. include:: ../README.rst
 
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
-   readme
    installation
-   usage
    library_doc
-   contributing
    authors
-   history
 
 Indices and tables
 ==================

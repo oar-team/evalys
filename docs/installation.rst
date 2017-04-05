@@ -2,13 +2,6 @@
 Installation
 ============
 
-Requirements:
-
-- python >= 3.4
-- pandas >= 17
-- matplotlib
-- seaborn
-
 You can install, upgrade, uninstall evalys with these commands::
 
   pip install [--user] evalys
