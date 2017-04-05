@@ -19,10 +19,10 @@ readme = read('README.rst')
 changelog = read('CHANGES.rst').replace('.. :changelog:', '')
 
 requirements = [
-    "pandas",
-    "matplotlib",
-    "seaborn",
-    "interval_set",
+    "pandas>=0.19",
+    "matplotlib>=2.0",
+    "seaborn>=0.7",
+    "interval_set>=1.1",
 ]
 
 version = ''
