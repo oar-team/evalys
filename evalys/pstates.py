@@ -27,8 +27,8 @@ class PowerStatesChanges(object):
             res_set = interval_set_to_set(res_intervals)
 
             for res in res_set:
-                assert(res not in current_pstate),"Invalid input file: multiple initialization of "\
-                                                  "machine {}".format(res)
+                if res in current_pstate:
+                    print("Warning : multiple initialization of machine {}".format(res))
                 current_pstate[res] = (pstate, time)
 
         # Let's add a finish row
