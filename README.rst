@@ -58,4 +58,5 @@ Gallery
 
 .. image:: _static/jobset_plot.png
 .. image:: _static/gantt_comparison.svg
+.. image:: _static/gantt_off_mstates.svg
 
