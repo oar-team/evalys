@@ -267,7 +267,7 @@ def plot_series(series_type, jobsets, ax=None, time_scale=False):
         raise RuntimeError('The serie \"{}\" is not implemeted yet')
 
     # Manage legend
-    ax.legend(loc='upper left')
+    ax.legend()
     ax.set_title(series_type)
     ax.grid(True)
 
@@ -484,7 +484,10 @@ def plot_load(load, nb_resources=None, ax=None, normalize=False,
     # FIXME: Add legend when this bug is fixed
     # https://github.com/mwaskom/seaborn/issues/1071
 
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    # ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    ax.grid(True)
+    ax.legend()
+    ax.set_title(load_label)
 
 
 def plot_free_resources(utilisation, nb_resources, normalize=False,
