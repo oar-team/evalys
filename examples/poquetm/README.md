@@ -25,7 +25,8 @@ odir=../batsim_outputs/medium_late/inertial_opportunistic_shutdown ; ./gantt_off
   -p ${odir}/out_pstate_changes.csv \
   -e ${odir}/out_consumed_energy.csv \
   -m ${odir}/out_machine_states.csv \
-  --off 13 --switchon '-1' --switchoff '-2'
+  --off 13 --switchon '-1' --switchoff '-2' \
+  --gantt --ru
 ```
 
 ##### Example output
