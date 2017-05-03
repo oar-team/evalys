@@ -11,10 +11,6 @@ import random
 import colorsys
 
 from evalys import metrics
-from procset import ProcSet
-
-
-# plt.style.use('ggplot')
 
 matplotlib.rcParams['figure.figsize'] = (12.0, 8.0)
 
@@ -36,11 +32,18 @@ def annotate(ax, rect, annot):
 
 
 def plot_gantt(jobset, ax=None, title="Gantt chart",
-               labels=True, palette=None, alpha=0.3, time_scale=False):
+               labels=True, palette=None, alpha=0.3,
+               time_scale=False,
+               color_function=None):
     # Palette generation if needed
     if palette is None:
         palette = generate_color_set(16)
     assert(len(palette) > 0)
+
+    if color_function is None:
+        def color_randrobin_select(job, palette):
+            return palette[job.unique_number % len(palette)]
+        color_function = color_randrobin_select
 
     # Get current axe to plot
     if ax is None:
@@ -54,7 +57,7 @@ def plot_gantt(jobset, ax=None, title="Gantt chart",
         df['starting_time'] = pd.to_datetime(df['starting_time'], unit='s')
 
     def plot_job(job):
-        col = palette[job.unique_number % len(palette)]
+        col = color_function(job, palette)
         duration = job['execution_time']
         for itv in job['allocated_processors'].intervals():
             (y0, y1) = itv
@@ -80,7 +83,9 @@ def plot_gantt(jobset, ax=None, title="Gantt chart",
 
 
 def plot_pstates(pstates, x_horizon, ax=None, palette=None,
-                 off_pstates=set(), son_pstates=set(), soff_pstates=set()):
+                 off_pstates=None,
+                 son_pstates=None,
+                 soff_pstates=None):
     # palette generation if needed
     if palette is None:
         palette = ["#000000", "#56ae6c", "#ba495b"]
@@ -88,6 +93,12 @@ def plot_pstates(pstates, x_horizon, ax=None, palette=None,
     labels = ["OFF", "switch ON", "switch OFF"]
     alphas = [0.6, 1, 1]
 
+    if off_pstates is None:
+        off_pstates = set()
+    if son_pstates is None:
+        son_pstates = set()
+    if soff_pstates is None:
+        soff_pstates = set()
     # Get current axe to plot
     if ax is None:
         ax = plt.gca()
@@ -151,7 +162,7 @@ def plot_mstates(mstates_df, ax=None, title=None, palette=None, reverse=True):
                     facecolor=palette[first_i], alpha=alphas[first_i],
                     step='post', label=stack_order[first_i])
 
-    for index, value in enumerate(stack_order[1:]):
+    for index, _ in enumerate(stack_order[1:]):
         ax.fill_between(mstates_df['time'], y[index, :], y[index+1, :],
                         facecolor=palette[index+1], alpha=alphas[index+1],
                         step='post',
@@ -162,9 +173,16 @@ def plot_mstates(mstates_df, ax=None, title=None, palette=None, reverse=True):
 
 
 def plot_gantt_pstates(jobset, pstates, ax, title, labels=True,
-                       off_pstates=set(), son_pstates=set(),
-                       soff_pstates=set()):
+                       off_pstates=None,
+                       son_pstates=None,
+                       soff_pstates=None):
 
+    if off_pstates is None:
+        off_pstates = set()
+    if son_pstates is None:
+        son_pstates = set()
+    if soff_pstates is None:
+        soff_pstates = set()
     plot_gantt(jobset, ax, title, labels, palette=["#8960b3"], alpha=0.3)
 
     fpb = pstates.pseudo_jobs.loc[pstates.pseudo_jobs['end'] < float('inf')]
@@ -194,7 +212,7 @@ def plot_processor_load(jobset, ax=None, title="Load", labels=True):
         ax = plt.gca()
 
     def _draw_rect(ax, base, width, height, color, label):
-        rect = mpatch.Rectangle(base, width, duration, alpha=0.2, color=color)
+        rect = mpatch.Rectangle(base, width, height, alpha=0.2, color=color)
         if label:
             annotate(ax, rect, label)
         ax.add_artist(rect)
@@ -284,6 +302,8 @@ def plot_gantt_general_shape(jobset_list, ax=None, alpha=0.3):
     RGB_tuples = generate_color_set(len(jobset_list))
     legend_rect = []
     legend_label = []
+    xmin = None
+    xmax = None
     for jobset_name, jobset in jobset_list.items():
         # generate color
         color = RGB_tuples[color_index % len(RGB_tuples)]
@@ -306,11 +326,19 @@ def plot_gantt_general_shape(jobset_list, ax=None, alpha=0.3):
         # apply for all jobs
         jobset.df.apply(plot_job, axis=1)
 
+        # compute graphical boundaries
+        if not xmin or jobset.df.submission_time.min() < xmin:
+            xmin = jobset.df.submission_time.min()
+        if not xmax or jobset.df.submission_time.max() < xmax:
+            xmax = jobset.df.submission_time.max()
+
     # do include legend
     ax.legend(legend_rect, legend_label, loc='center',
               bbox_to_anchor=(0.5, 1.06),
               fancybox=True, shadow=True, ncol=5)
-    ax.set_xlim((jobset.df.submission_time.min(), jobset.df.finish_time.max()))
+    ax.set_xlim((xmin, xmax))
+    # use last jobset of the previous loop to set the resource bounds assuming
+    # that all the gantt have the same number of resources
     ax.set_ylim(jobset.res_bounds)
     ax.grid(True)
     ax.set_title("General shape")
