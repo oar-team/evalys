@@ -33,7 +33,7 @@ class JobSet(object):
 
     >>> from evalys.jobset import JobSet
     >>> js = JobSet.from_csv("./examples/jobs.csv")
-    >>> js.gantt()
+    >>> js.plot(with_details=True)
     >>> # to show the graph
     >>> # import matplotlib.pyplot as plt
     >>> # plt.show()
@@ -61,20 +61,31 @@ class JobSet(object):
         self.df['proc_alloc'] = self.df.allocated_processors.apply(len)
 
         # Add missing columns if possible
-        fillable = all(
+        fillable_relative = all(
             col in self.df.columns
             for col in ['submission_time', 'waiting_time', 'execution_time']
         )
-        if fillable:
+        fillable_absolute = all(
+            col in self.df.columns
+            for col in ['submission_time', 'starting_time', 'finish_time']
+        )
+        if fillable_relative:
             if 'starting_time' not in self.df.columns:
                 self.df['starting_time'] = \
                     self.df['submission_time'] + self.df['waiting_time']
             if 'finish_time' not in self.df.columns:
                 self.df['finish_time'] = \
                     self.df['starting_time'] + self.df['execution_time']
+        elif fillable_absolute:
+            if 'waiting_time' not in self.df.columns:
+                self.df['waiting_time'] = \
+                    self.df['starting_time'] - self.df['submission_time']
+            if 'execution_time' not in self.df.columns:
+                self.df['execution_time'] = \
+                    self.df['finish_time'] - self.df['starting_time']
 
         if 'job_id' in self.df.columns:
-            self.df.rename(columns={'job_id':'jobID'}, inplace=True)
+            self.df.rename(columns={'job_id': 'jobID'}, inplace=True)
 
         # TODO check consistency on calculated columns...
 
@@ -300,7 +311,7 @@ class JobSet(object):
                       resource_intervals=None,
                       begin_time=0,
                       end_time=None):
-        #return fragmentation(
+        # return fragmentation(
         #    self.free_resources_gaps(resource_intervals,
         #                             begin_time, end_time),
         #    p=p)
@@ -323,7 +334,7 @@ class JobSet(object):
         free_resources_gaps = []
         if resource_intervals is None:
             resource_intervals = self.res_bounds
-        for res in range(resource_intervals[0], resource_intervals[1] + 1):
+        for _ in range(resource_intervals[0], resource_intervals[1] + 1):
             free_resources_gaps.append([])
 
         def get_free_slots_by_resources(x):
