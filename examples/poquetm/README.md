@@ -58,3 +58,36 @@ odir=../batsim_outputs/medium_late/inertial_opportunistic_shutdown ; ./plot_ener
 ##### Example output
 ![gantt_off_mstates_inertial_opportunistic](img/gantt_ru_power_llh__inertial_opportunistic.png)
 
+
+Compare different schedules (power only)
+----------------------------------------
+
+##### Example command
+
+``` bash
+odir1=../batsim_outputs/medium_late/inertial_shutdown ; \
+odir2=../batsim_outputs/medium_late/opportunistic_shutdown ; ./plot_energy_info.py \
+  -e ${odir1}/out_consumed_energy.csv ${odir2}/out_consumed_energy.csv \
+  --names 'inertial' 'opportunistic'
+```
+
+##### Example output
+![gantt_off_mstates_inertial_opportunistic](img/comp_power.png)
+
+Compare different schedules (more complex)
+--------------------------------------------------
+
+##### Example command
+
+``` bash
+odir1=../batsim_outputs/medium_late/inertial_shutdown ; \
+odir2=../batsim_outputs/medium_late/opportunistic_shutdown ; ./plot_energy_info.py \
+  --ru \
+  -m ${odir1}/out_machine_states.csv ${odir2}/out_machine_states.csv \
+  -e ${odir1}/out_consumed_energy.csv ${odir2}/out_consumed_energy.csv \
+  -l ${odir1}/sched_load_log.csv ${odir2}/sched_load_log.csv \
+  --names 'inertial' 'opportunistic'
+```
+
+##### Example output
+![gantt_off_mstates_inertial_opportunistic](img/comp_ru_power_llh.png)

@@ -16,22 +16,28 @@ import matplotlib.pyplot as plt
 def main():
     # Argument parsing
     parser = argparse.ArgumentParser(description='Draws the states the machines are in over time')
-    parser.add_argument('--mstatesCSV', '-m',
+    parser.add_argument('--mstatesCSV', '-m', nargs='+',
                         help='The name of the CSV file which contains pstate information')
-    parser.add_argument('--jobsCSV', '-j',
+    parser.add_argument('--jobsCSV', '-j', nargs='+',
                         help='The name of the CSV file which contains jobs information')
-    parser.add_argument('--pstatesCSV', '-p',
+    parser.add_argument('--pstatesCSV', '-p', nargs='+',
                         help='The name of the CSV file which contains pstate information')
-    parser.add_argument('--energyCSV', '-e',
+    parser.add_argument('--energyCSV', '-e', nargs='+',
                         help='The name of the CSV file which contains energy consumption information')
-    parser.add_argument('--llhCSV', '-l',
+    parser.add_argument('--llhCSV', '-l', nargs='+',
                         help='The name of the CSV file which contains LLH information')
+
     parser.add_argument('--off', nargs='+',
                         help='The power states which correspond to OFF machine states')
     parser.add_argument('--switchon', nargs='+',
                         help='The power states which correspond to a switching ON machine state')
     parser.add_argument('--switchoff', nargs='+',
                         help='The power states which correspond to switching OFF machine state')
+
+    parser.add_argument('--names', nargs='+',
+                         default=['Unnamed'],
+                         help='When multiple instances must be plotted, their names must be given via this parameter.')
+
     parser.add_argument('--output', '-o',
                         help='The output file (format depending on the given extension, pdf is RECOMMENDED). For example: figure.pdf')
 
@@ -44,53 +50,90 @@ def main():
 
 
     # Figure creation
+    nb_instances = None
     nb_subplots = 0
 
     if args.gantt:
-        nb_subplots = nb_subplots + 1
         assert(args.jobsCSV), "Jobs must be given to compute the gantt chart!"
         assert(args.pstatesCSV), "Pstates must be given to compute the gantt chart!"
 
+        nb_jobs_csv = len(args.jobsCSV)
+        nb_pstates_csv = len(args.pstatesCSV)
+        assert(nb_jobs_csv == nb_pstates_csv), "The number of jobs_csv ({}) should equal the number of pstates_csv ({})".format(nb_jobs_csv, nb_pstates_csv)
+        nb_gantt = nb_jobs_csv
+
+        nb_subplots += nb_gantt
+        nb_instances = nb_gantt
+
     if args.ru:
-        nb_subplots = nb_subplots + 1
         assert(args.mstatesCSV), "Mstates must be given to compute the resource usage!"
 
+        nb_ru = len(args.mstatesCSV)
+        nb_subplots += nb_ru
+
+        if nb_instances is not None:
+            assert(nb_instances == nb_ru), 'Inconsistent number of instances (nb_ru={} but already got nb_instances={})'.format(nb_ru, nb_instances)
+        else:
+            nb_instances = nb_ru
+
     if args.energyCSV:
-        nb_subplots = nb_subplots + 1
+        nb_energy_csv = len(args.energyCSV)
+        nb_subplots += 1
+
+        if nb_instances is not None:
+            assert(nb_instances == nb_ru), 'Inconsistent number of instances (nb_energy_csv={} but already got nb_instances={})'.format(nb_energy_csv, nb_instances)
+        else:
+            nb_instances = nb_energy_csv
 
     if args.llhCSV:
-        #nb_subplots = nb_subplots + 2
-        nb_subplots = nb_subplots + 1
+        nb_llh_csv = len(args.llhCSV)
+        nb_subplots += 1
+
+        if nb_instances is not None:
+            assert(nb_instances == nb_ru), 'Inconsistent number of instances (nb_llh_csv={} but already got nb_instances={})'.format(nb_llh_csv, nb_instances)
+        else:
+            nb_instances = nb_llh_csv
 
     if nb_subplots == 0:
         print('There is nothing to plot!')
         sys.exit(0)
 
+    names = args.names
+    assert(nb_instances == len(names)), 'The number of names ({} in {}) should equal the number of instances ({})'.format(len(names), names, nb_instances)
+
     fig, ax_list = plt.subplots(nb_subplots, sharex = True, sharey = False)
     if nb_subplots < 2:
         ax_list = [ax_list]
 
-
     # Create data structures from input args
-    jobs = None
-    if args.jobsCSV and args.gantt:
-        jobs = JobSet.from_csv(args.jobsCSV)
+    print('args.jobsCSV: {}'.format(args.jobsCSV))
+    print('args.llhCSV: {}'.format(args.llhCSV))
+    print('args.energyCSV: {}'.format(args.energyCSV))
 
-    pstates = None
+    jobs = list()
+    if args.jobsCSV and (args.gantt or args.llhCSV):
+        for csv_filename in args.jobsCSV:
+            jobs.append(JobSet.from_csv(csv_filename))
+
+    pstates = list()
     if args.pstatesCSV and args.gantt:
-        pstates = PowerStatesChanges(args.pstatesCSV)
+        for csv_filename in args.pstatesCSV:
+            pstates.append(PowerStatesChanges(csv_filename))
 
-    machines = None
+    machines = list()
     if args.mstatesCSV and args.ru:
-        machines = MachineStatesChanges(args.mstatesCSV)
+        for csv_filename in args.mstatesCSV:
+            machines.append(MachineStatesChanges(csv_filename))
 
-    llh = None
+    llh = list()
     if args.llhCSV:
-        llh = pd.read_csv(args.llhCSV)
+        for csv_filename in args.llhCSV:
+            llh.append(pd.read_csv(csv_filename))
 
-    energy = None
+    energy = list()
     if args.energyCSV:
-        energy = pd.read_csv(args.energyCSV)
+        for csv_filename in args.energyCSV:
+            energy.append(pd.read_csv(csv_filename))
 
     off_pstates = set()
     son_pstates = set()
@@ -111,43 +154,53 @@ def main():
     # Plotting
     ax_id = 0
     if args.gantt:
-        plot_gantt_pstates(jobs, pstates, ax_list[ax_id],
-                           title="Gantt chart",
-                           labels=False,
-                           off_pstates = off_pstates,
-                           son_pstates = son_pstates,
-                           soff_pstates = soff_pstates)
-        ax_id = ax_id + 1
+        for i,name in enumerate(names):
+            plot_gantt_pstates(jobs[i], pstates[i], ax_list[ax_id],
+                               title="Gantt chart: {}".format(name),
+                               labels=False,
+                               off_pstates = off_pstates,
+                               son_pstates = son_pstates,
+                               soff_pstates = soff_pstates)
+            ax_id = ax_id + 1
 
     if args.ru:
-        plot_mstates(machines.df, ax_list[ax_id], title="Resources state")
-        ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        ax_id = ax_id + 1
+        for i,name in enumerate(names):
+            plot_mstates(machines[i].df, ax_list[ax_id],
+                         title="Resources state: {}".format(name))
+            ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+            ax_id = ax_id + 1
 
     if args.energyCSV:
-        energy.dropna(axis=0, how='any', subset=['epower'], inplace=True)
-        energy.sort_values(inplace=True, by='time')
-        ax_list[ax_id].plot(energy['time'], energy['epower'],
-                            label='Power (W)', drawstyle="steps-pre")
-        #ax_list[ax_id].scatter(e['time'], e['epower'], label='Electrical power (W)')
-        ax_list[ax_id].set_title(args.energyCSV)
+        for i,energy_data in enumerate(energy):
+            energy_data.dropna(axis=0, how='any', subset=['epower'],
+                               inplace=True)
+            energy_data.sort_values(inplace=True, by='time')
+
+            ax_list[ax_id].plot(energy_data['time'], energy_data['epower'],
+                                label=names[i],
+                                drawstyle="steps-pre")
+
+        ax_list[ax_id].set_title('Power (W)')
         ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
         ax_id = ax_id + 1
 
     if args.llhCSV:
-        # LLH
-        ax_list[ax_id].plot(llh['date'], llh['liquid_load_horizon'], label="Liquid load horizon (s)")
-        ax_list[ax_id].scatter(jobs.df['submission_time'],
-                               jobs.df['waiting_time'], label="Waiting time (s)")
-        ax_list[ax_id].set_title(args.llhCSV)
+        for i,llh_data in enumerate(llh):
+            # LLH
+            ax_list[ax_id].plot(llh_data['date'],
+                                llh_data['liquid_load_horizon'],
+                                label='{} LLH (s)'.format(names[i]))
+            if args.jobsCSV:
+                print('len(jobs)={},i={}'.format(len(jobs),i))
+                ax_list[ax_id].scatter(jobs[i].df['submission_time'],
+                                       jobs[i].df['waiting_time'],
+                                       label='{} Mean Waiting Time (s)'.format(names[i]))
+
+        title = 'Unresponsiveness estimation'
+
+        ax_list[ax_id].set_title(title)
         ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
         ax_id = ax_id + 1
-
-        # Load in queue
-        # ax_list[ax_id].plot(llh['date'], llh['load_in_queue'], label="Load in queue (s*r)")
-        # ax_list[ax_id].set_title(args.llhCSV)
-        # ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        # ax_id = ax_id + 1
 
     # Figure outputting
     if args.output is not None:
