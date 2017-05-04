@@ -106,10 +106,6 @@ def main():
         ax_list = [ax_list]
 
     # Create data structures from input args
-    print('args.jobsCSV: {}'.format(args.jobsCSV))
-    print('args.llhCSV: {}'.format(args.llhCSV))
-    print('args.energyCSV: {}'.format(args.energyCSV))
-
     jobs = list()
     if args.jobsCSV and (args.gantt or args.llhCSV):
         for csv_filename in args.jobsCSV:
@@ -191,7 +187,6 @@ def main():
                                 llh_data['liquid_load_horizon'],
                                 label='{} LLH (s)'.format(names[i]))
             if args.jobsCSV:
-                print('len(jobs)={},i={}'.format(len(jobs),i))
                 ax_list[ax_id].scatter(jobs[i].df['submission_time'],
                                        jobs[i].df['waiting_time'],
                                        label='{} Mean Waiting Time (s)'.format(names[i]))
