@@ -5,10 +5,16 @@ from intsetwrap import string_to_interval_set, interval_set_to_set, \
                           set_to_interval_set, interval_set_to_string
 
 class MachineStatesChanges(object):
-    def __init__(self, filename):
+    def __init__(self, filename, time_min=None, time_max=None):
         self.df = pd.read_csv(filename)
         self.check(filename)
         self.df.drop_duplicates(keep='last', subset='time', inplace=True)
+
+        # Drop values outside the time window
+        if time_min is not None:
+            self.df = self.df.loc[self.df['time'] >= time_min]
+        if time_max is not None:
+            self.df = self.df.loc[self.df['time'] <= time_max]
 
     def check(self, filename):
         expected_columns = ['time', 'nb_sleeping', 'nb_switching_on',
