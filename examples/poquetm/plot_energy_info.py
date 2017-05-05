@@ -27,6 +27,10 @@ def main():
     parser.add_argument('--llhCSV', '-l', nargs='+',
                         help='The name of the CSV file which contains LLH information')
 
+    parser.add_argument('--llh-bound',
+                        type=float,
+                        help='If set, draws a LLH horizontal line on this bound')
+
     parser.add_argument('--time-window', nargs='+',
                         type=float,
                         help="If set, limits the time window of study. Example: '0 4200'")
@@ -212,6 +216,10 @@ def main():
 
     # Unresponsiveness estimation
     if args.llhCSV:
+        if args.llh_bound:
+            min_x = float('inf')
+            max_x = float('-inf')
+
         for i,llh_data in enumerate(llh):
             ax_list[ax_id].plot(llh_data['date'],
                                 llh_data['liquid_load_horizon'],
@@ -220,6 +228,19 @@ def main():
                 ax_list[ax_id].scatter(jobs[i].df['submission_time'],
                                        jobs[i].df['waiting_time'],
                                        label='{} Mean Waiting Time (s)'.format(names[i]))
+
+            if args.llh_bound:
+                min_x = min(min_x, llh_data['date'].min())
+                max_x = max(max_x, llh_data['date'].max())
+
+        if args.llh_bound:
+            llh_bound = args.llh_bound
+
+            # Plots a hline
+            ax_list[ax_id].plot([min_x, max_x],
+                                [llh_bound, llh_bound],
+                                linestyle='-', linewidth=2,
+                                label="LLH bound ({})".format(llh_bound))
 
         title = 'Unresponsiveness estimation'
 
