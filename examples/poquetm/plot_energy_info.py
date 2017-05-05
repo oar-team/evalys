@@ -49,7 +49,9 @@ def main():
     args = parser.parse_args()
 
 
-    # Figure creation
+    ###################
+    # Figure creation #
+    ###################
     nb_instances = None
     nb_subplots = 0
 
@@ -105,7 +107,9 @@ def main():
     if nb_subplots < 2:
         ax_list = [ax_list]
 
-    # Create data structures from input args
+    ##########################################
+    # Create data structures from input args #
+    ##########################################
     jobs = list()
     if args.jobsCSV and (args.gantt or args.llhCSV):
         for csv_filename in args.jobsCSV:
@@ -146,9 +150,11 @@ def main():
     assert((off_pstates & soff_pstates) == set()), "pstate collision"
     assert((son_pstates & soff_pstates) == set()), "pstate collision"
 
-
-    # Plotting
+    ############
+    # Plotting #
+    ############
     ax_id = 0
+    # Gantt charts
     if args.gantt:
         for i,name in enumerate(names):
             plot_gantt_pstates(jobs[i], pstates[i], ax_list[ax_id],
@@ -159,6 +165,7 @@ def main():
                                soff_pstates = soff_pstates)
             ax_id = ax_id + 1
 
+    # Aggregated resource states
     if args.ru:
         for i,name in enumerate(names):
             plot_mstates(machines[i].df, ax_list[ax_id],
@@ -166,6 +173,7 @@ def main():
             ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
             ax_id = ax_id + 1
 
+    # Power
     if args.energyCSV:
         for i,energy_data in enumerate(energy):
             energy_data.dropna(axis=0, how='any', subset=['epower'],
@@ -180,9 +188,9 @@ def main():
         ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
         ax_id = ax_id + 1
 
+    # Unresponsiveness estimation
     if args.llhCSV:
         for i,llh_data in enumerate(llh):
-            # LLH
             ax_list[ax_id].plot(llh_data['date'],
                                 llh_data['liquid_load_horizon'],
                                 label='{} LLH (s)'.format(names[i]))
@@ -197,7 +205,9 @@ def main():
         ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
         ax_id = ax_id + 1
 
-    # Figure outputting
+    #####################
+    # Figure outputting #
+    #####################
     if args.output is not None:
         plt.savefig(args.output)
     else:
