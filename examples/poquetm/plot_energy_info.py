@@ -27,6 +27,10 @@ def main():
     parser.add_argument('--llhCSV', '-l', nargs='+',
                         help='The name of the CSV file which contains LLH information')
 
+    parser.add_argument('--time-window', nargs='+',
+                        type=float,
+                        help="If set, limits the time window of study. Example: '0 4200'")
+
     parser.add_argument('--off', nargs='+',
                         help='The power states which correspond to OFF machine states')
     parser.add_argument('--switchon', nargs='+',
@@ -110,6 +114,11 @@ def main():
     ##########################################
     # Create data structures from input args #
     ##########################################
+    time_min = None
+    time_max = None
+    if args.time_window:
+        time_min, time_max = [float(f) for f in args.time_window]
+
     jobs = list()
     if args.jobsCSV and (args.gantt or args.llhCSV):
         for csv_filename in args.jobsCSV:
@@ -123,17 +132,30 @@ def main():
     machines = list()
     if args.mstatesCSV and args.ru:
         for csv_filename in args.mstatesCSV:
-            machines.append(MachineStatesChanges(csv_filename))
+            machines.append(MachineStatesChanges(csv_filename, time_min, time_max))
 
     llh = list()
     if args.llhCSV:
         for csv_filename in args.llhCSV:
-            llh.append(pd.read_csv(csv_filename))
+            llh_data = pd.read_csv(csv_filename)
+            # Drop values outside the time window
+            if time_min is not None:
+                llh_data = llh_data.loc[llh_data['date'] >= time_min]
+            if time_max is not None:
+                llh_data = llh_data.loc[llh_data['date'] <= time_max]
+            llh.append(llh_data)
 
     energy = list()
     if args.energyCSV:
         for csv_filename in args.energyCSV:
-            energy.append(pd.read_csv(csv_filename))
+            energy_data = pd.read_csv(csv_filename)
+
+            # Drop values outside the time window
+            if time_min is not None:
+                energy_data = energy_data.loc[energy_data['time'] >= time_min]
+            if time_max is not None:
+                energy_data = energy_data.loc[energy_data['time'] <= time_max]
+            energy.append(energy_data)
 
     off_pstates = set()
     son_pstates = set()
