@@ -34,7 +34,8 @@ def annotate(ax, rect, annot):
 def plot_gantt(jobset, ax=None, title="Gantt chart",
                labels=True, palette=None, alpha=0.3,
                time_scale=False,
-               color_function=None):
+               color_function=None,
+               label_function=None):
     # Palette generation if needed
     if palette is None:
         palette = generate_color_set(16)
@@ -44,6 +45,10 @@ def plot_gantt(jobset, ax=None, title="Gantt chart",
         def color_randrobin_select(job, palette):
             return palette[job.unique_number % len(palette)]
         color_function = color_randrobin_select
+    if label_function is None:
+        def job_id_label(job):
+            return job['jobID']
+        label_function = job_id_label
 
     # Get current axe to plot
     if ax is None:
@@ -55,6 +60,7 @@ def plot_gantt(jobset, ax=None, title="Gantt chart",
     if time_scale:
         df['submission_time'] = pd.to_datetime(df['submission_time'], unit='s')
         df['starting_time'] = pd.to_datetime(df['starting_time'], unit='s')
+        df['execution_time'] = pd.to_timedelta(df['execution_time'], unit='s')
 
     def plot_job(job):
         col = color_function(job, palette)
@@ -64,20 +70,24 @@ def plot_gantt(jobset, ax=None, title="Gantt chart",
             x0 = job['starting_time']
             if time_scale:
                 # Convert date to matplotlib float representation
-                x0 = x0.to_pydatetime()
+                x0 = matplotlib.dates.date2num(x0.to_pydatetime())
+                finish_time = matplotlib.dates.date2num(
+                    job['starting_time'] + job['execution_time']
+                )
+                duration = finish_time - x0
             rect = mpatch.Rectangle((x0, y0), duration,
                                     y1 - y0 + 0.9, alpha=alpha, color=col)
             if labels:
-                annotate(ax, rect, str(job['jobID']))
+                annotate(ax, rect, str(label_function(job)))
             ax.add_artist(rect)
 
     # apply for all jobs
     df.apply(plot_job, axis=1)
 
     # set graph limits, grid and title
-    ax.set_xlim(df['starting_time'].min(), (
+    ax.set_xlim(df['submission_time'].min(), (
         df['starting_time'] + df['execution_time']).max())
-    ax.set_ylim(jobset.res_bounds[0]-1, jobset.res_bounds[1]+1)
+    ax.set_ylim(jobset.res_bounds[0]-1, jobset.res_bounds[1]+2)
     ax.grid(True)
     ax.set_title(title)
 
