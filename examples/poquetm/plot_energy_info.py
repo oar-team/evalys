@@ -52,7 +52,13 @@ def main():
     parser.add_argument("--gantt", action='store_true',
                         help="If set, the gantt chart will be outputted. Requires jobs, pstates and probably machine values (--off, --switchon, --switchoff)")
     parser.add_argument("--ru", action='store_true',
-                        help="If set, the resource usage will be outputted. Required machine states")
+                        help="If set, the resource usage will be outputted. Requires machine states")
+    parser.add_argument("--power", action='store_true',
+                        help="If set, the instantaneous power will be outputted. Requires energyCSV")
+    parser.add_argument("--energy", action='store_true',
+                        help="If set, the cumulated energy consumption will be outputted. Requires energyCSV")
+    parser.add_argument('--llh', action='store_true',
+                        help='If set, the LLH will be outputted. Requires llhCSV. Jobs are optional.')
 
     args = parser.parse_args()
 
@@ -86,19 +92,30 @@ def main():
         else:
             nb_instances = nb_ru
 
+    if args.power:
+        assert(args.energyCSV), "EnergyCSV must be given to compute power!"
+        nb_subplots += 1
+
+    if args.energy:
+        assert(args.energyCSV), "EnergyCSV must be given to compute energy!"
+
+        nb_energy = 1
+        nb_subplots += nb_energy
+
     if args.energyCSV:
         nb_energy_csv = len(args.energyCSV)
-        nb_subplots += 1
 
         if nb_instances is not None:
             assert(nb_instances == nb_ru), 'Inconsistent number of instances (nb_energy_csv={} but already got nb_instances={})'.format(nb_energy_csv, nb_instances)
         else:
             nb_instances = nb_energy_csv
 
-    if args.llhCSV:
-        nb_llh_csv = len(args.llhCSV)
+    if args.llh:
+        assert(args.llhCSV)
         nb_subplots += 1
 
+    if args.llhCSV:
+        nb_llh_csv = len(args.llhCSV)
         if nb_instances is not None:
             assert(nb_instances == nb_ru), 'Inconsistent number of instances (nb_llh_csv={} but already got nb_instances={})'.format(nb_llh_csv, nb_instances)
         else:
@@ -200,7 +217,7 @@ def main():
             ax_id = ax_id + 1
 
     # Power
-    if args.energyCSV:
+    if args.power:
         for i,energy_data in enumerate(energy):
             energy_data.dropna(axis=0, how='any', subset=['epower'],
                                inplace=True)
@@ -211,6 +228,18 @@ def main():
                                 drawstyle="steps-pre")
 
         ax_list[ax_id].set_title('Power (W)')
+        ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax_id = ax_id + 1
+
+    # Energy
+    if args.energy:
+        for i,energy_data in enumerate(energy):
+
+            ax_list[ax_id].plot(energy_data['time'], energy_data['energy'],
+                                label=names[i],
+                                drawstyle="steps-pre")
+
+        ax_list[ax_id].set_title('Energy (J)')
         ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
         ax_id = ax_id + 1
 
