@@ -162,6 +162,14 @@ class JobSet(object):
                                    proc)
         return self._queue
 
+    def reset_time(self, to=0):
+        '''
+        Reset the time index by giving the first submission time as 0
+        '''
+        df = self.df
+        for col in ['starting_time', 'submission_time', 'finish_time']:
+            df[col] = df[col] - df['submission_time'].min() + to
+
     def plot(self, normalize=False, with_details=False, time_scale=False):
         nrows = 2
         if with_details:
