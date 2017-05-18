@@ -300,7 +300,8 @@ def plot_series(series_type, jobsets, ax=None, time_scale=False):
     ax.grid(True)
 
 
-def plot_gantt_general_shape(jobset_list, ax=None, alpha=0.3):
+def plot_gantt_general_shape(jobset_list, ax=None, alpha=0.3,
+                             title="Gantt general shape"):
     '''
     Draw a general gantt shape of multiple jobsets on one plot for comparison
     '''
@@ -339,8 +340,8 @@ def plot_gantt_general_shape(jobset_list, ax=None, alpha=0.3):
         # compute graphical boundaries
         if not xmin or jobset.df.submission_time.min() < xmin:
             xmin = jobset.df.submission_time.min()
-        if not xmax or jobset.df.submission_time.max() < xmax:
-            xmax = jobset.df.submission_time.max()
+        if not xmax or jobset.df.finish_time.max() < xmax:
+            xmax = jobset.df.finish_time.max()
 
     # do include legend
     ax.legend(legend_rect, legend_label, loc='center',
@@ -349,9 +350,9 @@ def plot_gantt_general_shape(jobset_list, ax=None, alpha=0.3):
     ax.set_xlim((xmin, xmax))
     # use last jobset of the previous loop to set the resource bounds assuming
     # that all the gantt have the same number of resources
-    ax.set_ylim(jobset.res_bounds)
+    ax.set_ylim(jobset.res_bounds[0]-1, jobset.res_bounds[1]+2)
     ax.grid(True)
-    ax.set_title("General shape")
+    ax.set_title(title)
 
 
 def plot_job_details(dataframe, size, ax=None, title="Job details",
