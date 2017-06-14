@@ -30,10 +30,13 @@ def main():
     parser.add_argument('--llh-bound',
                         type=float,
                         help='If set, draws a LLH horizontal line on this bound')
+    parser.add_argument('--priority-job-waiting-time-bound',
+                        type=float,
+                        help='If set, draws an horizon line corresponding to this bound')
 
     parser.add_argument('--time-window', nargs='+',
                         type=float,
-                        help="If set, limits the time window of study. Example: '0 4200'")
+                        help="If set, limits the time window of study. Example: 0 4200")
 
     parser.add_argument('--off', nargs='+',
                         help='The power states which correspond to OFF machine states')
@@ -59,6 +62,16 @@ def main():
                         help="If set, the cumulated energy consumption will be outputted. Requires energyCSV")
     parser.add_argument('--llh', action='store_true',
                         help='If set, the LLH will be outputted. Requires llhCSV. Jobs are optional.')
+    parser.add_argument('--load-in-queue', action='store_true',
+                        help='If set, the load in queue will be outputted. Requires llhCSV.')
+    parser.add_argument('--nb-jobs-in-queue', action='store_true',
+                        help='If set, the number of jobs in queue will be outputted. Requires llhCSV.')
+    parser.add_argument('--priority-job-size', action='store_true',
+                        help='If set, the size of the priority job will be outputted. Requires llhCSV.')
+    parser.add_argument('--priority-job-expected-waiting-time', action='store_true',
+                        help='If set, the expected waiting time of the priority job will be outputted. Requires llhCSV.')
+    parser.add_argument('--priority-job-starting-expected-soon', action='store_true',
+                        help='If set, whether the priority job is expected to start soon will be outputted. Requires llhCSV')
 
     args = parser.parse_args()
 
@@ -106,12 +119,32 @@ def main():
         nb_energy_csv = len(args.energyCSV)
 
         if nb_instances is not None:
-            assert(nb_instances == nb_ru), 'Inconsistent number of instances (nb_energy_csv={} but already got nb_instances={})'.format(nb_energy_csv, nb_instances)
+            assert(nb_instances == nb_energy_csv), 'Inconsistent number of instances (nb_energy_csv={} but already got nb_instances={})'.format(nb_energy_csv, nb_instances)
         else:
             nb_instances = nb_energy_csv
 
     if args.llh:
-        assert(args.llhCSV)
+        assert(args.llhCSV), "LLH_CSV must be given to compute llh!"
+        nb_subplots += 1
+
+    if args.load_in_queue:
+        assert(args.llhCSV), "LLH_CSV must be given to compute llh!"
+        nb_subplots += 1
+
+    if args.nb_jobs_in_queue:
+        assert(args.llhCSV), "LLH_CSV must be given to compute the queue!"
+        nb_subplots += 1
+
+    if args.priority_job_size:
+        assert(args.llhCSV), "LLH_CSV must be given to compute the priority job size!"
+        nb_subplots += 1
+
+    if args.priority_job_expected_waiting_time:
+        assert(args.llhCSV), "LLH_CSV must be given to compute the priority job size!"
+        nb_subplots += 1
+
+    if args.priority_job_starting_expected_soon:
+        assert(args.llhCSV), "LLH_CSV must be given to compute the priority job size!"
         nb_subplots += 1
 
     if args.llhCSV:
@@ -219,15 +252,11 @@ def main():
     # Power
     if args.power:
         for i,energy_data in enumerate(energy):
-            energy_data.dropna(axis=0, how='any', subset=['epower'],
-                               inplace=True)
-            energy_data.sort_values(inplace=True, by='time')
-
-            ax_list[ax_id].plot(energy_data['time'], energy_data['epower'],
+            ax_list[ax_id].plot(energy_data['time'], energy_data['wattmin'],
                                 label=names[i],
-                                drawstyle="steps-pre")
+                                drawstyle="steps-post")
 
-        ax_list[ax_id].set_title('Power (W)')
+        ax_list[ax_id].set_title('Minimum Power (W)')
         ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
         ax_id = ax_id + 1
 
@@ -236,15 +265,14 @@ def main():
         for i,energy_data in enumerate(energy):
 
             ax_list[ax_id].plot(energy_data['time'], energy_data['energy'],
-                                label=names[i],
-                                drawstyle="steps-pre")
+                                label=names[i])
 
         ax_list[ax_id].set_title('Energy (J)')
         ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
         ax_id = ax_id + 1
 
     # Unresponsiveness estimation
-    if args.llhCSV:
+    if args.llh:
         if args.llh_bound:
             min_x = float('inf')
             max_x = float('-inf')
@@ -274,6 +302,75 @@ def main():
         title = 'Unresponsiveness estimation'
 
         ax_list[ax_id].set_title(title)
+        ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax_id = ax_id + 1
+
+    # Number of jobs in queue
+    if args.nb_jobs_in_queue:
+        for i,llh_data in enumerate(llh):
+            ax_list[ax_id].plot(llh_data['date'],
+                                llh_data['nb_jobs_in_queue'],
+                                label='{}'.format(names[i]),
+                                drawstyle="steps-post")
+        ax_list[ax_id].set_title('Number of jobs in queue')
+        ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax_id = ax_id + 1
+
+    # Load in queue
+    if args.load_in_queue:
+        for i,llh_data in enumerate(llh):
+            ax_list[ax_id].plot(llh_data['date'],
+                                llh_data['load_in_queue'],
+                                label='{}'.format(names[i]),
+                                drawstyle="steps-post")
+        ax_list[ax_id].set_title('Load in queue (nb_res * seconds)')
+        ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax_id = ax_id + 1
+
+    # Priority job size
+    if args.priority_job_size:
+        for i,llh_data in enumerate(llh):
+            ax_list[ax_id].plot(llh_data['date'],
+                                llh_data['first_job_size'],
+                                label='{}'.format(names[i]),
+                                drawstyle="steps-post")
+        ax_list[ax_id].set_title('Number of requested resources of the priority job')
+        ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax_id = ax_id + 1
+
+    # Priority job expected waiting time
+    if args.priority_job_expected_waiting_time:
+        if args.priority_job_waiting_time_bound:
+            min_x = float('inf')
+            max_x = float('-inf')
+        for i,llh_data in enumerate(llh):
+            ax_list[ax_id].plot(llh_data['date'],
+                                llh_data['priority_job_expected_waiting_time'],
+                                label='{}'.format(names[i]),
+                                drawstyle="steps-post")
+            if args.priority_job_waiting_time_bound:
+                min_x = min(min_x, llh_data['date'].min())
+                max_x = max(max_x, llh_data['date'].max())
+
+        if args.priority_job_waiting_time_bound:
+            priority_job_waiting_time_bound = args.priority_job_waiting_time_bound
+            # Plots a hline
+            ax_list[ax_id].plot([min_x, max_x],
+                                [priority_job_waiting_time_bound, priority_job_waiting_time_bound],
+                                linestyle='-', linewidth=2,
+                                label="Bound ({})".format(priority_job_waiting_time_bound))
+        ax_list[ax_id].set_title('Expected waiting time of the priority job (s)')
+        ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax_id = ax_id + 1
+
+    # Whether priority job is expected to start soon
+    if args.priority_job_starting_expected_soon:
+        for i,llh_data in enumerate(llh):
+            ax_list[ax_id].plot(llh_data['date'],
+                                llh_data['priority_job_starting_expected_soon'],
+                                label='{}'.format(names[i]),
+                                drawstyle="steps-post")
+        ax_list[ax_id].set_title('Is the priority job expected to start soon ?')
         ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
         ax_id = ax_id + 1
 
