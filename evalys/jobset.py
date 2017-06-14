@@ -170,11 +170,14 @@ class JobSet(object):
         for col in ['starting_time', 'submission_time', 'finish_time']:
             df[col] = df[col] - df['submission_time'].min() + to
 
-    def plot(self, normalize=False, with_details=False, time_scale=False):
+    def plot(self, normalize=False, with_details=False, time_scale=False,
+             title=None):
         nrows = 2
         if with_details:
             nrows = nrows + 2
-        _, axe = plt.subplots(nrows=nrows, sharex=True)
+        fig, axe = plt.subplots(nrows=nrows, sharex=True)
+        if title:
+            fig.suptitle(title, fontsize=16)
         visu.plot_load(self.utilisation, self.MaxProcs,
                        load_label="utilisation", ax=axe[0],
                        normalize=normalize, time_scale=time_scale)
