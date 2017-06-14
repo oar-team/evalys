@@ -20,9 +20,9 @@ class PowerStatesChanges(object):
         assert(init['time'].count() > 0), "Invalid input file: no init row (one at time = 0)"
 
         for index, row in init.iterrows():
-            time = row['time']
-            pstate = row['new_pstate']
-            res_str = row['machine_id']
+            time = float(row['time'])
+            pstate = int(row['new_pstate'])
+            res_str = str(row['machine_id'])
             res_intervals = string_to_interval_set(res_str)
             res_set = interval_set_to_set(res_intervals)
 
