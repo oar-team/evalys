@@ -132,8 +132,8 @@ class JobSet(object):
             df.to_csv(f, index=False, sep=",",
                       float_format='%.{}f'.format(self.float_precision))
 
-    def gantt(self, ax=None, title="Gantt chart"):
-        visu.plot_gantt(self, ax, title)
+    def gantt(self, ax=None, title="Gantt chart", time_scale=False):
+        visu.plot_gantt(self, ax, title, time_scale=time_scale)
 
     @property
     def utilisation(self):
@@ -162,19 +162,32 @@ class JobSet(object):
                                    proc)
         return self._queue
 
-    def plot(self, normalize=False, with_details=False):
+    def reset_time(self, to=0):
+        '''
+        Reset the time index by giving the first submission time as 0
+        '''
+        df = self.df
+        for col in ['starting_time', 'submission_time', 'finish_time']:
+            df[col] = df[col] - df['submission_time'].min() + to
+
+    def plot(self, normalize=False, with_details=False, time_scale=False,
+             title=None):
         nrows = 2
         if with_details:
             nrows = nrows + 2
-        _, axe = plt.subplots(nrows=nrows, sharex=True)
+        fig, axe = plt.subplots(nrows=nrows, sharex=True)
+        if title:
+            fig.suptitle(title, fontsize=16)
         visu.plot_load(self.utilisation, self.MaxProcs,
                        load_label="utilisation", ax=axe[0],
-                       normalize=normalize)
+                       normalize=normalize, time_scale=time_scale)
         visu.plot_load(self.queue, self.MaxProcs,
-                       load_label="queue", ax=axe[1], normalize=normalize)
+                       load_label="queue", ax=axe[1], normalize=normalize,
+                       time_scale=time_scale)
         if with_details:
-            visu.plot_job_details(self.df, self.MaxProcs, ax=axe[2])
-            self.gantt(ax=axe[3])
+            visu.plot_job_details(self.df, self.MaxProcs, ax=axe[2],
+                                  time_scale=time_scale)
+            visu.plot_gantt(self, ax=axe[3], time_scale=time_scale)
 
     def detailed_utilisation(self):
         df = self.free_intervals()
