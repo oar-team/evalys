@@ -1,6 +1,7 @@
 # coding: utf-8
 from __future__ import unicode_literals, print_function
 import pandas as pd
+import re
 from intsetwrap import string_to_interval_set, interval_set_to_set, \
                           set_to_interval_set, interval_set_to_string
 
@@ -19,10 +20,16 @@ class PowerStatesChanges(object):
         current_pstate = {}
         assert(init['time'].count() > 0), "Invalid input file: no init row (one at time = 0)"
 
+        r = re.compile(r"(\d+)\.0+")
+
         for index, row in init.iterrows():
             time = float(row['time'])
             pstate = int(row['new_pstate'])
             res_str = str(row['machine_id'])
+
+            # Pandas/Python/Anything else may use 0.0 instead of 0...
+            res_str = r.sub(r"\1", res_str)
+
             res_intervals = string_to_interval_set(res_str)
             res_set = interval_set_to_set(res_intervals)
 
@@ -45,9 +52,13 @@ class PowerStatesChanges(object):
         after_init = after_init.sort_values(by = 'time')
 
         for index, row in after_init.iterrows():
-            time = row['time']
-            pstate = row['new_pstate']
-            res_str = row['machine_id']
+            time = float(row['time'])
+            pstate = int(row['new_pstate'])
+            res_str = str(row['machine_id'])
+
+            # Pandas/Python/Anything else may use 0.0 instead of 0...
+            res_str = r.sub(r"\1", res_str)
+
             res_intervals = string_to_interval_set(res_str)
             res_set = interval_set_to_set(res_intervals)
 
