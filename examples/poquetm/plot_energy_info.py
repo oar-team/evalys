@@ -200,6 +200,7 @@ def main():
             llh.append(llh_data)
 
     energy = list()
+    power = list()
     if args.energyCSV:
         for csv_filename in args.energyCSV:
             energy_data = pd.read_csv(csv_filename)
@@ -210,6 +211,16 @@ def main():
             if time_max is not None:
                 energy_data = energy_data.loc[energy_data['time'] <= time_max]
             energy.append(energy_data)
+
+            if args.power:
+                df = energy_data.drop_duplicates(subset='time')
+                df = df.drop(['event_type', 'wattmin', 'epower'], axis=1)
+                diff = df.diff(1)
+                diff.rename(columns={'time':'time_diff', 'energy':'energy_diff'},
+                            inplace=True)
+                joined = pd.concat([df, diff], axis=1)
+                joined['power'] = joined['energy_diff'] / joined['time_diff']
+                power.append(joined)
 
     off_pstates = set()
     son_pstates = set()
@@ -251,12 +262,12 @@ def main():
 
     # Power
     if args.power:
-        for i,energy_data in enumerate(energy):
-            ax_list[ax_id].plot(energy_data['time'], energy_data['wattmin'],
+        for i,power_data in enumerate(power):
+            ax_list[ax_id].plot(power_data['time'], power_data['power'],
                                 label=names[i],
-                                drawstyle="steps-post")
+                                drawstyle='steps-pre')
 
-        ax_list[ax_id].set_title('Minimum Power (W)')
+        ax_list[ax_id].set_title('Power (W)')
         ax_list[ax_id].legend(loc='center left', bbox_to_anchor=(1, 0.5))
         ax_id = ax_id + 1
 
