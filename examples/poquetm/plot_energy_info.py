@@ -81,6 +81,10 @@ def main():
     ###################
     nb_instances = None
     nb_subplots = 0
+    left_adjust = 0.05
+    top_adjust = 0.95
+    bottom_adjust = 0.05
+    right_adjust = 0.95
 
     if args.gantt:
         assert(args.jobsCSV), "Jobs must be given to compute the gantt chart!"
@@ -96,6 +100,7 @@ def main():
 
     if args.ru:
         assert(args.mstatesCSV), "Mstates must be given to compute the resource usage!"
+        right_adjust = min(right_adjust, 0.85)
 
         nb_ru = len(args.mstatesCSV)
         nb_subplots += nb_ru
@@ -125,6 +130,7 @@ def main():
 
     if args.llh:
         assert(args.llhCSV), "LLH_CSV must be given to compute llh!"
+        right_adjust = min(right_adjust, 0.85)
         nb_subplots += 1
 
     if args.load_in_queue:
@@ -150,7 +156,7 @@ def main():
     if args.llhCSV:
         nb_llh_csv = len(args.llhCSV)
         if nb_instances is not None:
-            assert(nb_instances == nb_ru), 'Inconsistent number of instances (nb_llh_csv={} but already got nb_instances={})'.format(nb_llh_csv, nb_instances)
+            assert(nb_instances == nb_llh_csv), 'Inconsistent number of instances (nb_llh_csv={} but already got nb_instances={})'.format(nb_llh_csv, nb_instances)
         else:
             nb_instances = nb_llh_csv
 
@@ -162,6 +168,11 @@ def main():
     assert(nb_instances == len(names)), 'The number of names ({} in {}) should equal the number of instances ({})'.format(len(names), names, nb_instances)
 
     fig, ax_list = plt.subplots(nb_subplots, sharex = True, sharey = False)
+    fig.subplots_adjust(bottom=bottom_adjust,
+                        right=right_adjust,
+                        top=top_adjust,
+                        left=left_adjust)
+    #fig.tight_layout()
     if nb_subplots < 2:
         ax_list = [ax_list]
 
@@ -241,6 +252,7 @@ def main():
     # Plotting #
     ############
     ax_id = 0
+    legends = list()
     # Gantt charts
     if args.gantt:
         for i,name in enumerate(names):
@@ -295,7 +307,7 @@ def main():
             if args.jobsCSV:
                 ax_list[ax_id].scatter(jobs[i].df['submission_time'],
                                        jobs[i].df['waiting_time'],
-                                       label='{} Mean Waiting Time (s)'.format(names[i]))
+                                       label='{} Waiting Time (s)'.format(names[i]))
 
             if args.llh_bound:
                 min_x = min(min_x, llh_data['date'].min())
