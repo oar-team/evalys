@@ -170,6 +170,9 @@ class JobSet(object):
         for col in ['starting_time', 'submission_time', 'finish_time']:
             df[col] = df[col] - df['submission_time'].min() + to
 
+        self._queue = None
+        self._utilisation = None
+
     def plot(self, normalize=False, with_details=False, time_scale=False,
              title=None):
         nrows = 2
