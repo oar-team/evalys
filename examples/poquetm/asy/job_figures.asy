@@ -110,5 +110,5 @@ void figure_one_job_more_attributes(bool draw_turnaround_time = true)
 figure_one_job_definition();
 erase();
 
-figure_one_job_more_attributes(draw_turnaround_time = false);
+figure_one_job_more_attributes(draw_turnaround_time = true);
 erase();

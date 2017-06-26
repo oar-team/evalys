@@ -23,8 +23,14 @@ List of asymptote files
 How to generate the figures?
 ============================
 
-Install asymptote if needed, then simply call ``make``.
+Install asymptote if needed, then simply call ``make pdf`` (or ``make png``).
 
 Install asymptote on Arch-based systems: ``pacman -S asymptote``.
 Install asymptote on debian-based systems: ``apt-get install asymptote``.
 Sources on [github](https://github.com/vectorgraphics/asymptote).
+
+Gallery
+=======
+Rasterized images can be found [there](./png).
+Please notice that the rasterization process made the images ugly, classical
+output is better ;).
