@@ -37,6 +37,9 @@ def main():
     parser.add_argument('--time-window', nargs='+',
                         type=float,
                         help="If set, limits the time window of study. Example: 0 4200")
+    parser.add_argument('--force-right-adjust',
+                        type=float,
+                        help='If set, forces the right adjustement of the plot.')
 
     parser.add_argument('--off', nargs='+',
                         help='The power states which correspond to OFF machine states')
@@ -113,12 +116,14 @@ def main():
     if args.power:
         assert(args.energyCSV), "EnergyCSV must be given to compute power!"
         nb_subplots += 1
+        right_adjust = min(right_adjust, 0.85)
 
     if args.energy:
         assert(args.energyCSV), "EnergyCSV must be given to compute energy!"
 
         nb_energy = 1
         nb_subplots += nb_energy
+        right_adjust = min(right_adjust, 0.85)
 
     if args.energyCSV:
         nb_energy_csv = len(args.energyCSV)
@@ -167,7 +172,10 @@ def main():
     names = args.names
     assert(nb_instances == len(names)), 'The number of names ({} in {}) should equal the number of instances ({})'.format(len(names), names, nb_instances)
 
-    fig, ax_list = plt.subplots(nb_subplots, sharex = True, sharey = False)
+    if args.force_right_adjust:
+        right_adjust = args.force_right_adjust
+
+    fig, ax_list = plt.subplots(nb_subplots, sharex=True, sharey=False)
     fig.subplots_adjust(bottom=bottom_adjust,
                         right=right_adjust,
                         top=top_adjust,
