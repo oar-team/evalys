@@ -25,6 +25,9 @@ def cut_workload(workload_df, begin_time, end_time):
 
     # reindex workload by start time to extract easily
     df = workload_df.copy()
+
+    contains_starting_time = 'starting_time' in df
+
     df['starting_time'] = df['submission_time'] + df['waiting_time']
     df = df.sort_values(by='submission_time').set_index(['submission_time'],
                                                         drop=False)
@@ -46,6 +49,11 @@ def cut_workload(workload_df, begin_time, end_time):
         (df["starting_time"] + df["execution_time"] > begin_time)]
 
     # return dataframe sorted without starting_time column and a proper index
+    if not contains_starting_time:
+        to_export.drop('starting_time', inplace=True, axis=1)
+        queued_jobs.drop('starting_time', inplace=True, axis=1)
+        running_jobs.drop('starting_time', inplace=True, axis=1)
+
     return {
         "workload": to_export.sort_values(by="jobID").reset_index(drop=True),
         "queue": queued_jobs.sort_values(by="jobID").reset_index(drop=True),
