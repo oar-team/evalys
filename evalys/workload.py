@@ -354,7 +354,7 @@ class Workload(object):
                  "of {}".format(period_in_hours, utilisation))
         return self.extract(periods, notes)
 
-    def extract(self, periods, notes=""):
+    def extract(self, periods, notes="", merge=True):
         """
         Extract workload periods from the given workload dataframe.
         Returns a list of extracted Workloads. Some notes can be added to
@@ -375,7 +375,11 @@ class Workload(object):
 
         def do_extract(period):
             to_export = cut_workload(self.df, period.begin, period.end)
-            wl = Workload(to_export["workload"],
+            if merge:
+                wload = pd.concat(to_export.values())
+            else:
+                wload = to_export["workload"]
+            wl = Workload(wload,
                           Conversion="Workload extracted using Evalys: "
                                      "https://github.com/oar-team/evalys",
                           #Information=self.Information,
