@@ -164,9 +164,9 @@ class Workload(object):
                 try:
                     value = int(re.search(r'\d+', value).group())
                     setattr(self, key, value)
-                except:
+                except Exception as e:
                     print("WARNING: unable to get \"{}\" integer value. Found"
-                          " value: {}".format(key, value))
+                          " value: {}. Except: {}".format(key, value, e))
             else:
                 setattr(self, key, value)
 
