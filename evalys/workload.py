@@ -378,12 +378,13 @@ class Workload(object):
             wl = Workload(to_export["workload"],
                           Conversion="Workload extracted using Evalys: "
                                      "https://github.com/oar-team/evalys",
-                          Information=self.Information,
-                          Computer=self.Computer,
-                          Installation=self.Installation,
-                          Note=notes,
-                          MaxProcs=self.MaxProcs,
+                          #Information=self.Information,
+                          #Computer=self.Computer,
+                          #Installation=self.Installation,
+                          #Note=notes,
+                          MaxProcs=str(self.MaxProcs),
                           UnixStartTime=int(period.begin),
+                          TimeZoneString=self.TimeZoneString,
                           ExtractBegin=period.begin,
                           ExtractEnd=period.end)
             extracted.append(wl)
