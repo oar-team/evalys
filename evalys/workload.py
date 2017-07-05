@@ -164,9 +164,9 @@ class Workload(object):
                 try:
                     value = int(re.search(r'\d+', value).group())
                     setattr(self, key, value)
-                except:
+                except Exception as e:
                     print("WARNING: unable to get \"{}\" integer value. Found"
-                          " value: {}".format(key, value))
+                          " value: {}. Except: {}".format(key, value, e))
             else:
                 setattr(self, key, value)
 
@@ -354,7 +354,7 @@ class Workload(object):
                  "of {}".format(period_in_hours, utilisation))
         return self.extract(periods, notes)
 
-    def extract(self, periods, notes=""):
+    def extract(self, periods, notes="", merge=True):
         """
         Extract workload periods from the given workload dataframe.
         Returns a list of extracted Workloads. Some notes can be added to
@@ -375,15 +375,20 @@ class Workload(object):
 
         def do_extract(period):
             to_export = cut_workload(self.df, period.begin, period.end)
-            wl = Workload(to_export["workload"],
+            if merge:
+                wload = pd.concat(to_export.values())
+            else:
+                wload = to_export["workload"]
+            wl = Workload(wload,
                           Conversion="Workload extracted using Evalys: "
                                      "https://github.com/oar-team/evalys",
-                          Information=self.Information,
-                          Computer=self.Computer,
-                          Installation=self.Installation,
-                          Note=notes,
-                          MaxProcs=self.MaxProcs,
+                          #Information=self.Information,
+                          #Computer=self.Computer,
+                          #Installation=self.Installation,
+                          #Note=notes,
+                          MaxProcs=str(self.MaxProcs),
                           UnixStartTime=int(period.begin),
+                          TimeZoneString=self.TimeZoneString,
                           ExtractBegin=period.begin,
                           ExtractEnd=period.end)
             extracted.append(wl)
