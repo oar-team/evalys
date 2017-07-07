@@ -310,7 +310,10 @@ class Workload(object):
                                                period_in_hours,
                                                utilisation,
                                                variation=0.01,
-                                               nb_max=None):
+                                               nb_max=None,
+                                               merge=True,
+                                               randomize_starting_times=False,
+                                               random_seed=0):
         '''
         This extract from the workload a period (in hours) with a given mean
         utilisation (between 0 and 1).
@@ -322,9 +325,15 @@ class Workload(object):
         norm_util = self.utilisation
 
         # resample the dataframe with the given period
-        time_periods = np.arange(min(norm_util.index),
-                                 max(norm_util.index),
-                                 60 * 60 * period_in_hours)
+        if randomize_starting_times:
+            np.random.seed(random_seed)
+            c = np.random.choice(norm_util.index, size=50)
+            time_periods = np.compress(
+                c <= max(norm_util.index) - period_in_hours * 60 * 60, c)
+        else:
+            time_periods = np.arange(min(norm_util.index),
+                                     max(norm_util.index),
+                                     60 * 60 * period_in_hours)
         mean_df = pd.DataFrame()
         for index, val in enumerate(time_periods):
             if index == len(time_periods) - 1 or index == 0:
@@ -352,7 +361,7 @@ class Workload(object):
 
         notes = ("Period of {} hours with a mean utilisation "
                  "of {}".format(period_in_hours, utilisation))
-        return self.extract(periods, notes)
+        return self.extract(periods, notes, merge)
 
     def extract(self, periods, notes="", merge=True):
         """
