@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from evalys import visu
 from procset import ProcInt, ProcSet
-from evalys.metrics import compute_load, load_mean, fragmentation_reis
+from evalys.metrics import compute_load, load_mean, fragmentation_reis, fragmentation
 
 
 class JobSet(object):
@@ -167,8 +167,9 @@ class JobSet(object):
         Reset the time index by giving the first submission time as 0
         '''
         df = self.df
+        reset_value = df['submission_time'].min()
         for col in ['starting_time', 'submission_time', 'finish_time']:
-            df[col] = df[col] - df['submission_time'].min() + to
+            df[col] = df[col] - reset_value + to
 
         self._queue = None
         self._utilisation = None
@@ -325,17 +326,20 @@ class JobSet(object):
     def fragmentation(self,
                       p=2,
                       resource_intervals=None,
-                      begin_time=0,
+                      begin_time=None,
                       end_time=None):
-        # return fragmentation(
+        if end_time is None:
+            end_time = self.df.finish_time.max()
+        if begin_time is None:
+            begin_time = self.df.submission_time.min()
+        return fragmentation(
+           self.free_resources_gaps(resource_intervals,
+                                    begin_time, end_time),
+           p=p)
+        #return fragmentation_reis(
         #    self.free_resources_gaps(resource_intervals,
         #                             begin_time, end_time),
-        #    p=p)
-
-        return fragmentation_reis(
-            self.free_resources_gaps(resource_intervals,
-                                     begin_time, end_time),
-            end_time - begin_time, p=p)
+        #    end_time - begin_time, p=p)
 
     def free_resources_gaps(self, resource_intervals=None,
                             begin_time=0, end_time=None):
@@ -356,7 +360,7 @@ class JobSet(object):
         def get_free_slots_by_resources(x):
             for res in range(resource_intervals[0], resource_intervals[1] + 1):
                 if res in x.allocated_processors:
-                    free_resources_gaps[res].append(x.execution_time)
+                    free_resources_gaps[res - resource_intervals[0]].append(x.execution_time)
 
         # compute resource gaps
         fs.apply(get_free_slots_by_resources, axis=1)
