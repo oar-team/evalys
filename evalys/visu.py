@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import random
-import colorsys
 
 from evalys import metrics
 
@@ -18,8 +17,8 @@ available_series = ['bonded_slowdown', 'waiting_time', 'all']
 
 
 def generate_color_set(nb_colors):
-    HSV_tuples = [(x * 1.0 / nb_colors, 1, 0.7) for x in range(nb_colors)]
-    return list(map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples))
+    colors = iter(plt.cm.viridis(np.linspace(0, 1, nb_colors)))
+    return list(colors)
 
 
 def annotate(ax, rect, annot):
@@ -32,13 +31,13 @@ def annotate(ax, rect, annot):
 
 
 def plot_gantt(jobset, ax=None, title="Gantt chart",
-               labels=True, palette=None, alpha=0.3,
+               labels=True, palette=None, alpha=0.4,
                time_scale=False,
                color_function=None,
                label_function=None):
     # Palette generation if needed
     if palette is None:
-        palette = generate_color_set(16)
+        palette = generate_color_set(8)
     assert(len(palette) > 0)
 
     if color_function is None:
@@ -76,7 +75,10 @@ def plot_gantt(jobset, ax=None, title="Gantt chart",
                 )
                 duration = finish_time - x0
             rect = mpatch.Rectangle((x0, y0), duration,
-                                    y1 - y0 + 0.9, alpha=alpha, color=col)
+                                    y1 - y0 + 0.9,
+                                    alpha=alpha,
+                                    facecolor=col,
+                                    edgecolor='b')
             if labels:
                 annotate(ax, rect, str(label_function(job)))
             ax.add_artist(rect)
