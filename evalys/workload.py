@@ -311,9 +311,11 @@ class Workload(object):
                                                utilisation,
                                                variation=0.01,
                                                nb_max=None,
-                                               merge=True,
+                                               merge_basic=False,
+                                               merge_change_submit_times=False,
                                                randomize_starting_times=False,
-                                               random_seed=0):
+                                               random_seed=0,
+                                               max_nb_jobs=None):
         '''
         This extract from the workload a period (in hours) with a given mean
         utilisation (between 0 and 1).
@@ -353,7 +355,7 @@ class Workload(object):
         periods = mean_df.loc[
             lambda x: x.norm_mean_util >= (utilisation - variation)].loc[
                 lambda x: x.norm_mean_util <= (utilisation + variation)
-            ]
+        ]
 
         # Only take nb_max periods if it is defined
         if nb_max:
@@ -361,9 +363,14 @@ class Workload(object):
 
         notes = ("Period of {} hours with a mean utilisation "
                  "of {}".format(period_in_hours, utilisation))
-        return self.extract(periods, notes, merge)
+        return self.extract(periods, notes, merge_basic=merge_basic,
+                            merge_change_submit_times=merge_change_submit_times,
+                            max_nb_jobs=max_nb_jobs)
 
-    def extract(self, periods, notes="", merge=True):
+    def extract(self, periods, notes="",
+                merge_basic=False,
+                merge_change_submit_times=False,
+                max_nb_jobs=None):
         """
         Extract workload periods from the given workload dataframe.
         Returns a list of extracted Workloads. Some notes can be added to
@@ -380,21 +387,34 @@ class Workload(object):
         >>> extracted = w.extract(periods)
         """
 
+        if merge_basic + merge_change_submit_times not in {0, 1}:
+            raise Exception('Invalid extract call: '
+                            'Multiple merge cannot be used at the same time')
+
         extracted = []
 
         def do_extract(period):
             to_export = cut_workload(self.df, period.begin, period.end)
-            if merge:
+            if merge_basic:
                 wload = pd.concat(to_export.values())
+            elif merge_change_submit_times:
+                running = to_export["running"]
+                queued = to_export["queue"]
+                wload = to_export["workload"]
+
+                running['submission_time'] = running['submission_time'] + running['waiting_time']
+                queued['submission_time'] = periods['begin'].min()
+
+                wload = pd.concat([running, queued, wload])
             else:
                 wload = to_export["workload"]
             wl = Workload(wload,
                           Conversion="Workload extracted using Evalys: "
                                      "https://github.com/oar-team/evalys",
-                          #Information=self.Information,
-                          #Computer=self.Computer,
-                          #Installation=self.Installation,
-                          #Note=notes,
+                          # Information=self.Information,
+                          # Computer=self.Computer,
+                          # Installation=self.Installation,
+                          # Note=notes,
                           MaxProcs=str(self.MaxProcs),
                           UnixStartTime=int(period.begin),
                           TimeZoneString=self.TimeZoneString,
@@ -403,6 +423,10 @@ class Workload(object):
             extracted.append(wl)
 
         periods.apply(do_extract, axis=1)
+
+        if max_nb_jobs is not None:
+            extracted = [x for x in extracted if x.df.shape[0] <= max_nb_jobs]
+
         return extracted
 
     @property
