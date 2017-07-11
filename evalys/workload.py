@@ -403,7 +403,7 @@ class Workload(object):
                 wload = to_export["workload"]
 
                 running['submission_time'] = running['submission_time'] + running['waiting_time']
-                queued['submission_time'] = periods['begin'].min()
+                queued['submission_time'] = period['begin'].min()
 
                 wload = pd.concat([running, queued, wload])
             else:
