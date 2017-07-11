@@ -331,7 +331,7 @@ class Workload(object):
             np.random.seed(random_seed)
             c = np.random.choice(norm_util.index, size=50)
             time_periods = np.compress(
-                c <= max(norm_util.index) - period_in_hours * 60 * 60, c)
+                c <= max(norm_util.index) - period_in_hours * (60 * 60), c)
         else:
             time_periods = np.arange(min(norm_util.index),
                                      max(norm_util.index),
@@ -341,7 +341,7 @@ class Workload(object):
             if index == len(time_periods) - 1 or index == 0:
                 continue
             begin = val
-            end = time_periods[index + 1]
+            end = val + period_in_hours * (60 * 60)
 
             mean_df = mean_df.append(
                 {"begin": begin,
