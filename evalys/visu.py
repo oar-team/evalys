@@ -78,7 +78,8 @@ def plot_gantt(jobset, ax=None, title="Gantt chart",
                                     y1 - y0 + 0.9,
                                     alpha=alpha,
                                     facecolor=col,
-                                    edgecolor='b')
+                                    edgecolor='black',
+                                    linewidth=0.5)
             if labels:
                 annotate(ax, rect, str(label_function(job)))
             ax.add_artist(rect)
