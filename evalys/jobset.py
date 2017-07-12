@@ -164,12 +164,15 @@ class JobSet(object):
 
     def reset_time(self, to=0):
         '''
-        Reset the time index by giving the first submission time as 0
+        Reset the time index by giving the first submission time as 1
         '''
         df = self.df
-        reset_value = df['submission_time'].min()
+        if not to:
+            reset_value = df['submission_time'].min() - 1
+        else:
+            reset_value = to
         for col in ['starting_time', 'submission_time', 'finish_time']:
-            df[col] = df[col] - reset_value + to
+            df[col] = df[col] - reset_value
 
         self._queue = None
         self._utilisation = None
