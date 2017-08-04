@@ -91,11 +91,12 @@ def main():
 
     if args.gantt:
         assert(args.jobsCSV), "Jobs must be given to compute the gantt chart!"
-        assert(args.pstatesCSV), "Pstates must be given to compute the gantt chart!"
 
         nb_jobs_csv = len(args.jobsCSV)
-        nb_pstates_csv = len(args.pstatesCSV)
-        assert(nb_jobs_csv == nb_pstates_csv), "The number of jobs_csv ({}) should equal the number of pstates_csv ({})".format(nb_jobs_csv, nb_pstates_csv)
+
+        if args.pstatesCSV:
+            nb_pstates_csv = len(args.pstatesCSV)
+            assert(nb_jobs_csv == nb_pstates_csv), "The number of jobs_csv ({}) should equal the number of pstates_csv ({})".format(nb_jobs_csv, nb_pstates_csv)
         nb_gantt = nb_jobs_csv
 
         nb_subplots += nb_gantt
@@ -264,12 +265,16 @@ def main():
     # Gantt charts
     if args.gantt:
         for i,name in enumerate(names):
-            plot_gantt_pstates(jobs[i], pstates[i], ax_list[ax_id],
-                               title="Gantt chart: {}".format(name),
-                               labels=False,
-                               off_pstates = off_pstates,
-                               son_pstates = son_pstates,
-                               soff_pstates = soff_pstates)
+            if args.pstatesCSV:
+                plot_gantt_pstates(jobs[i], pstates[i], ax_list[ax_id],
+                                   title="Gantt chart: {}".format(name),
+                                   labels=False,
+                                   off_pstates=off_pstates,
+                                   son_pstates=son_pstates,
+                                   soff_pstates=soff_pstates)
+            else:
+                plot_gantt(jobs[i], ax=ax_list[ax_id],
+                           title="Gantt chart: {}".format(name))
             ax_id = ax_id + 1
 
     # Aggregated resource states
