@@ -51,11 +51,17 @@ class JobSet(object):
         if resource_bounds:
             self.res_bounds = ProcInt(*resource_bounds)
         else:
-            self.res_bounds = ProcInt(
-                min(pset.min for pset in self.df.allocated_processors),
-                max(pset.max for pset in self.df.allocated_processors)
-            )
+            def alloc_apply(f, alloc):
+                for pset in  alloc:
+                    try:
+                        yield f(pset)
+                    except ValueError:
+                        pass
 
+            self.res_bounds = ProcInt(
+                min(alloc_apply(lambda pset: pset.min, self.df.allocated_processors)),
+                max(alloc_apply(lambda pset: pset.max, self.df.allocated_processors))
+            )
         self.MaxProcs = len(self.res_bounds)
 
         self.df['proc_alloc'] = self.df.allocated_processors.apply(len)
