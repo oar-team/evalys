@@ -44,6 +44,55 @@ def annotate(ax, rect, annot):
                 fontsize='small', ha='center', va='center')
 
 
+def map_unique_numbers(df):
+    """Map the DataFrame of jobs to a set of jobs which should be labeled and a list of unique ids
+    for the given DataFrame.
+
+    Jobs which have the same jobID and workload_name will be merged together and the same
+    unique_id will be assigned to them. The set of labeled_jobs will only contain the job
+    in the middle of each list of jobs sharing the same id.
+    """
+    labeled_jobs = set()
+    unique_numbers = []
+
+    # Jobs start their number with 1
+    number_counter = 1
+    numbers_map = {}
+    jobs_for_unique_number = {}
+
+    for index, row in df.iterrows():
+        workload_name = str(row["workload_name"])
+        job_id = str(row["jobID"])
+        full_job_id = workload_name + "!" + job_id
+        job_intervals=row['allocated_processors']
+
+        try:
+            # The job id was already in the workload: re-use the same unique id.
+            unique_number = numbers_map[full_job_id]
+            list_of_jobs = jobs_for_unique_number[full_job_id]
+        except KeyError:
+            # The job id is new: generate a new unique number for this
+            # workload_name!jobID combination.
+            unique_number = number_counter
+            numbers_map[full_job_id] = number_counter
+            number_counter += 1
+            jobs_for_unique_number[full_job_id] = list_of_jobs = []
+
+        if job_intervals:
+            list_of_jobs.append((index, row))
+
+        unique_numbers.append(unique_number)
+
+    for k, v in jobs_for_unique_number.items():
+        # If there are jobs for this job id which have job intervals:
+        # search for the element in the middle and add its index to the set.
+        if v:
+            index, row = v[len(v)//2]
+            labeled_jobs.add(index)
+
+    return labeled_jobs, unique_numbers
+
+
 def plot_gantt(jobset, ax=None, title="Gantt chart",
                labels=True, palette=None, alpha=0.4,
                time_scale=False,
@@ -68,7 +117,8 @@ def plot_gantt(jobset, ax=None, title="Gantt chart",
         ax = plt.gca()
 
     df = jobset.df.copy()
-    df["unique_number"] = np.arange(0, len(df))
+    labeled_jobs, unique_numbers = map_unique_numbers(df)
+    df["unique_number"] = unique_numbers
 
     if time_scale:
         df['submission_time'] = pd.to_datetime(df['submission_time'], unit='s')
@@ -95,7 +145,8 @@ def plot_gantt(jobset, ax=None, title="Gantt chart",
                                     edgecolor='black',
                                     linewidth=0.5)
             if labels:
-                annotate(ax, rect, str(label_function(job)))
+                if job.name in labeled_jobs:
+                    annotate(ax, rect, str(label_function(job)))
             ax.add_artist(rect)
 
     # apply for all jobs
