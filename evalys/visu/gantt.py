@@ -8,6 +8,7 @@ import matplotlib.dates as mdates
 import numpy as np
 import pandas as pd
 
+from . import core
 
 # helper functions: formatting of df  #####
 
@@ -41,23 +42,6 @@ def _chain_df_formatters(*formatters):
 
 
 # helper functions: drawing of jobs  #####
-
-def generate_palette(size):
-    return list(plt.cm.viridis(np.linspace(0, 1, size)))
-
-
-COLORBLIND_FRIENDLY_PALETTE = (
-    # http://jfly.iam.u-tokyo.ac.jp/color/#pallet
-    '#999999',        # grey
-    ( .9,  .6,   0),  # orange
-    (.35,  .7,  .9),  # sky blue
-    (  0,  .6,  .5),  # bluish green
-    (.95,  .9, .25),  # yellow
-    (  0, .45,  .7),  # blue
-    ( .8,  .4,   0),  # vermillion
-    ( .8,  .6,  .7),  # reddish purple
-)
-
 
 def _round_robin_map(job, palette):
     return palette[job.unique_number % len(palette)]
@@ -131,7 +115,7 @@ def plot_gantt(jobset, **kwargs):
         'labels': True,
         'alpha': 0.4,
         'time_scale': False,
-        'palette': generate_palette(8),
+        'palette': core.generate_palette(8),
         'color_function': _round_robin_map,
         'label_function': lambda job: str(job.jobID),
     }

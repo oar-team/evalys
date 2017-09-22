@@ -1,4 +1,5 @@
 # coding: utf-8
+
 from __future__ import unicode_literals, print_function
 
 import matplotlib
@@ -9,30 +10,12 @@ import pandas as pd
 import seaborn as sns
 import random
 
-from evalys import metrics
+from . import core
+from .. import metrics
 
 matplotlib.rcParams['figure.figsize'] = (12.0, 8.0)
 
 available_series = ['bonded_slowdown', 'waiting_time', 'all']
-
-
-def generate_color_set(nb_colors):
-    colors = iter(plt.cm.viridis(np.linspace(0, 1, nb_colors)))
-    return list(colors)
-
-def generate_colorblind_friendly_palette():
-    # http://jfly.iam.u-tokyo.ac.jp/color/#pallet
-    cbf_palette = [
-        '#999999',        # grey
-        ( .9,  .6,   0),  # orange
-        (.35,  .7,  .9),  # sky blue
-        (  0,  .6,  .5),  # bluish green
-        (.95,  .9, .25),  # yellow
-        (  0, .45,  .7),  # blue
-        ( .8,  .4,   0),  # vermillion
-        ( .8,  .6,  .7),  # reddish purple
-    ]
-    return cbf_palette
 
 
 def annotate(ax, rect, annot):
@@ -100,7 +83,7 @@ def plot_gantt_legacy(jobset, ax=None, title="Gantt chart",
                label_function=None):
     # Palette generation if needed
     if palette is None:
-        palette = generate_color_set(8)
+        palette = core.generate_palette(8)
     assert(len(palette) > 0)
 
     if color_function is None:
@@ -295,7 +278,7 @@ def plot_processor_load(jobset, ax=None, title="Load", labels=True):
             annotate(ax, rect, label)
         ax.add_artist(rect)
 
-    RGB_tuples = generate_color_set(16)
+    RGB_tuples = core.generate_palette(16)
     load = {
         p: 0.0 for p in range(jobset.res_bounds[0], jobset.res_bounds[1] + 1)
     }
@@ -378,7 +361,7 @@ def plot_gantt_general_shape(jobset_list, ax=None, alpha=0.3,
         ax = plt.gca()
 
     color_index = 0
-    RGB_tuples = generate_color_set(len(jobset_list))
+    RGB_tuples = core.generate_palette(len(jobset_list))
     legend_rect = []
     legend_label = []
     xmin = None
