@@ -93,7 +93,7 @@ def map_unique_numbers(df):
     return labeled_jobs, unique_numbers
 
 
-def plot_gantt(jobset, ax=None, title="Gantt chart",
+def plot_gantt_legacy(jobset, ax=None, title="Gantt chart",
                labels=True, palette=None, alpha=0.4,
                time_scale=False,
                color_function=None,
@@ -261,7 +261,7 @@ def plot_gantt_pstates(jobset, pstates, ax, title, labels=True,
         son_pstates = set()
     if soff_pstates is None:
         soff_pstates = set()
-    plot_gantt(jobset, ax, title, labels, palette=["#8960b3"], alpha=0.3)
+    plot_gantt_legacy(jobset, ax, title, labels, palette=["#8960b3"], alpha=0.3)
 
     fpb = pstates.pseudo_jobs.loc[pstates.pseudo_jobs['end'] < float('inf')]
 
