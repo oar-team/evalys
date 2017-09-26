@@ -138,8 +138,8 @@ class JobSet(object):
             df.to_csv(f, index=False, sep=",",
                       float_format='%.{}f'.format(self.float_precision))
 
-    def gantt(self, ax=None, title="Gantt chart", time_scale=False):
-        visu.plot_gantt(self, ax, title, time_scale=time_scale)
+    def gantt(self, **kwargs):
+        visu.plot_gantt(self, **kwargs)
 
     @property
     def utilisation(self):
