@@ -13,7 +13,30 @@ from . import core
 # helper functions: formatting of df  #####
 
 def _default_format_df(df):
-    df['unique_number'] = np.arange(0, len(df))
+    unique_numbers = []
+    do_annotate = [False for _ in range(len(df))]
+
+    next_idx = 0
+    rows_same_job_map = {}
+
+    # Set the unique id for each job
+    for index, row in df.iterrows():
+        try:
+            cur_idx = int(row["jobID"])
+        except KeyError:
+            cur_idx = next_idx
+
+        next_idx = cur_idx + 1
+        unique_numbers.append(cur_idx)
+        rows_same_job_map.setdefault(cur_idx, []).append(row)
+
+    # Annotate the element in the middle of a job series
+    for unique_id, rows in rows_same_job_map.items():
+        mid_row = rows[len(rows)//2]
+        do_annotate[mid_row.name] = True
+
+    df['unique_number'] = unique_numbers
+    df['do_annotate'] = do_annotate
 
 
 def _time_scaled_format_df(df):
@@ -61,6 +84,21 @@ def _annotate(rect, label):
         va='center'
     )
 
+
+def _annotate_job(rect, job, **kwargs):
+    label = None
+    if kwargs['label_function'] is not None:
+        label = kwargs['label_function'](job)
+
+    if label:
+        if job.do_annotate:
+            _annotate(rect, label)
+
+
+def _label_job(job):
+    return str(job.jobID)
+
+
 def _plot_job(job, **kwargs):
     x0 = job.starting_time
     duration = job.execution_time
@@ -76,8 +114,8 @@ def _plot_job(job, **kwargs):
             linewidth=0.5
         )
         kwargs['ax'].add_artist(rect)
-        if kwargs['label_function'] is not None:
-            _annotate(rect, kwargs['label_function'](job))
+        if kwargs['annotate_function'] is not None:
+            kwargs['annotate_function'](rect, job, **kwargs)
 
 
 # helper functions: configuration of display  #####
@@ -117,7 +155,8 @@ def plot_gantt(jobset, **kwargs):
         'time_scale': False,
         'palette': core.generate_palette(8),
         'color_function': _round_robin_map,
-        'label_function': lambda job: str(job.jobID),
+        'label_function': _label_job,
+        'annotate_function': _annotate_job,
     }
     _params.update(kwargs)  # user supplied parameters have priority
     _params['color_function'] = \
