@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
 
-from .core import *
-from .gantt import *
-from .legacy import *
+from .core import generate_palette, COLORBLIND_FRIENDLY_PALETTE
+from .gantt import plot_gantt

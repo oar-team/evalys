@@ -9,7 +9,7 @@ Options:
 """
 
 from evalys.jobset import JobSet
-from evalys.visu import plot_fragmentation
+from evalys.visu.legacy import plot_fragmentation
 import matplotlib.pyplot as plt
 import docopt
 import pandas as pd

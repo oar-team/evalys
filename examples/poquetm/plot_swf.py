@@ -5,7 +5,7 @@ import argparse
 
 import seaborn
 from evalys import *
-from evalys.visu import *
+from evalys.visu.legacy import *
 from evalys.workload import *
 
 import pandas as pd
