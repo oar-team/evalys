@@ -97,7 +97,7 @@ def main():
         file_name = unique_file_name(jobsets, file_name)
         jobsets[file_name] = js
         if args.gantt:
-            js.gantt(ax_list[index], file_name)
+            js.gantt(ax=ax_list[index], title=file_name)
             index += 1
 
     if args.gantt_diff:

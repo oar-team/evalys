@@ -80,8 +80,7 @@ class GanttVisualization(core.Visualization):
                 linewidth=0.5
             )
             self.ax.add_artist(rect)
-            if self.labeler is not None:
-                self.annotate(rect, self.labeler(job))
+            self.annotate(rect, self.labeler(job))
 
     def build(self, jobset):
         # build the visualization
