@@ -1,13 +1,14 @@
 # coding: utf-8
 
-from matplotlib import pyplot as plt
-import numpy as np
+from matplotlib import pyplot
+import numpy
 
 
 def generate_palette(size):
-    return list(plt.cm.viridis(np.linspace(0, 1, size)))
+    return list(pyplot.cm.viridis(numpy.linspace(0, 1, size)))
 
 
+# pylint: disable=bad-whitespace
 COLORBLIND_FRIENDLY_PALETTE = (
     # http://jfly.iam.u-tokyo.ac.jp/color/#pallet
     '#999999',        # grey
@@ -19,3 +20,37 @@ COLORBLIND_FRIENDLY_PALETTE = (
     ( .8,  .4,   0),  # vermillion
     ( .8,  .6,  .7),  # reddish purple
 )
+# pylint: enable=bad-whitespace
+
+
+class EvalysFigure:
+    def __init__(self, *, wtitle='Evalys Figure'):
+        self.fig = pyplot.figure()
+        self.axes = {}
+        self.visualizations = {}
+        self.wtitle = wtitle
+
+    def show(self):
+        self.fig.show()
+
+    @property
+    def wtitle(self):
+        return self.fig.canvas.get_window_title()
+
+    @wtitle.setter
+    def wtitle(self, wtitle):
+        self.fig.canvas.set_window_title(wtitle)
+
+
+class Visualization:
+    def __init__(self, ax):
+        self.ax = ax
+        self.palette = generate_palette(8)
+
+    @property
+    def title(self):
+        return self.ax.get_title()
+
+    @title.setter
+    def title(self, title):
+        self.ax.set_title(title)
