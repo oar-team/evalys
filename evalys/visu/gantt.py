@@ -95,6 +95,10 @@ class GanttVisualization(core.Visualization):
             ylim=(jobset.res_bounds.inf - 1, jobset.res_bounds.sup + 2),
         )
         self.ax.grid(True)
+        if self.xscale == 'time':
+            self.ax.xaxis.set_major_formatter(
+                mdates.DateFormatter('%Y-%m-%d\n%H:%M:%S')
+            )
 
 
 class GanttFigure(core.EvalysFigure):
