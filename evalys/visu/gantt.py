@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 from . import core
+from ..utils import bulksetattr
 
 
 class GanttVisualization(core.Visualization):
@@ -103,18 +104,14 @@ class GanttVisualization(core.Visualization):
 class GanttLayout(core.EvalysLayout):
     def __init__(self, *, wtitle='Gantt chart'):
         super().__init__(wtitle=wtitle)
-        self.axes['gantt'] = self.fig.add_subplot(1, 1, 1)
-        self.visualizations['gantt'] = \
-                GanttVisualization(self.axes['gantt'], title=wtitle)
+        self.axes['all'] = self.fig.add_subplot(1, 1, 1)
 
 
 def plot_gantt(jobset, *, title='Gantt chart', **kwargs):
-    fig = GanttLayout(wtitle=title)
-    gantt = fig.visualizations['gantt']
-
-    for kw in kwargs:
-        getattr(gantt, kw)  # check .kw is a valid attribute, if not raise
-        setattr(gantt, kw, kwargs[kw])  # .kw is valid, update its value
-
+    layout = GanttLayout(wtitle=title)
+    gantt = layout.register(GanttVisualization, axkey='all', title=title)
+    bulksetattr(gantt, **kwargs)
     gantt.build(jobset)
-    fig.show()
+    layout.show()
+
+

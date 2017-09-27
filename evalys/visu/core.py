@@ -33,6 +33,13 @@ class EvalysLayout:
     def show(self):
         self.fig.show()
 
+    def register(self, visu_cls, axkey, *args, **kwargs):
+        # Add a new visualization to the layout.
+        ax = self.axes[axkey]
+        new_visu = visu_cls(ax, *args, **kwargs)
+        self.visualizations.setdefault(axkey, []).append(new_visu)
+        return new_visu
+
     @property
     def wtitle(self):
         return self.fig.canvas.get_window_title()
