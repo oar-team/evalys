@@ -23,7 +23,7 @@ COLORBLIND_FRIENDLY_PALETTE = (
 # pylint: enable=bad-whitespace
 
 
-class EvalysFigure:
+class EvalysLayout:
     def __init__(self, *, wtitle='Evalys Figure'):
         self.fig = pyplot.figure()
         self.axes = {}

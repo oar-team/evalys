@@ -100,7 +100,7 @@ class GanttVisualization(core.Visualization):
             )
 
 
-class GanttFigure(core.EvalysFigure):
+class GanttLayout(core.EvalysLayout):
     def __init__(self, *, wtitle='Gantt chart'):
         super().__init__(wtitle=wtitle)
         self.axes['gantt'] = self.fig.add_subplot(1, 1, 1)
@@ -109,7 +109,7 @@ class GanttFigure(core.EvalysFigure):
 
 
 def plot_gantt(jobset, *, title='Gantt chart', **kwargs):
-    fig = GanttFigure(wtitle=title)
+    fig = GanttLayout(wtitle=title)
     gantt = fig.visualizations['gantt']
 
     for kw in kwargs:
