@@ -101,6 +101,52 @@ class GanttVisualization(core.Visualization):
             )
 
 
+class DiffGanttVisualization(GanttVisualization):
+    def __init__(self, ax, *, title='Gantt chart'):
+        super().__init__(ax, title=title)
+        self.alpha = 0.5
+        self.colorer = lambda _, palette: palette[0]  # single color per jobset
+        self.labeler = lambda _: ''  # do not label jobs
+        self.palette = None  # let .build(…) figure the number of colors
+
+    def build(self, jobsets):
+        _orig_palette = self.palette  # save original palette
+
+        # create an adapted palette if none has been provided
+        palette = self.palette or core.generate_palette(len(jobsets))
+
+        gxmin, gxmax = None, None  # global xlim
+        captions = []  # list of proxy objects for the legend
+
+        for idx, (js_name, js_obj) in enumerate(jobsets.items()):
+            # create a palette made of a single color for current jobset
+            color = palette[idx]
+            self.palette = [color]
+
+            # build as a GanttVisualization for current jobset
+            super().build(js_obj)
+
+            # tweak visualization appearance
+            if idx:
+                # recompute xlim with respect to previous GanttVisualization
+                xmin, xmax = self.ax.get_xlim()
+                gxmin, gxmax = min(xmin, gxmin), max(xmax, gxmax)
+                self.ax.set_xlim(gxmin, gxmax)
+            else:
+                # first GanttVisualization, save xlim as is
+                gxmin, gxmax = self.ax.get_xlim()
+
+            # create a proxy object for the legend
+            captions.append(
+                mpatch.Patch(color=color, alpha=self.alpha, label=js_name)
+            )
+
+        # add legend to the visualization
+        self.ax.legend(handles=captions, loc='best')
+
+        self.palette = _orig_palette  # restore original palette
+
+
 def plot_gantt(jobset, *, title='Gantt chart', **kwargs):
     layout = core.SimpleLayout(wtitle=title)
     gantt = layout.register(GanttVisualization, axkey='all', title=title)
@@ -109,3 +155,9 @@ def plot_gantt(jobset, *, title='Gantt chart', **kwargs):
     layout.show()
 
 
+def plot_diff_gantt(jobsets, *, title='Gantt charts comparison', **kwargs):
+    layout = core.SimpleLayout(wtitle=title)
+    diff = layout.register(DiffGanttVisualization, axkey='all', title=title)
+    bulksetattr(diff, **kwargs)
+    diff.build(jobsets)
+    layout.show()
