@@ -49,6 +49,12 @@ class EvalysLayout:
         self.fig.canvas.set_window_title(wtitle)
 
 
+class SimpleLayout(EvalysLayout):
+    def __init__(self, *, wtitle='Simple Figure'):
+        super().__init__(wtitle=wtitle)
+        self.axes['all'] = self.fig.add_subplot(1, 1, 1)
+
+
 class Visualization:
     def __init__(self, ax):
         self.ax = ax

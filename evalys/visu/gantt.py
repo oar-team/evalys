@@ -101,14 +101,8 @@ class GanttVisualization(core.Visualization):
             )
 
 
-class GanttLayout(core.EvalysLayout):
-    def __init__(self, *, wtitle='Gantt chart'):
-        super().__init__(wtitle=wtitle)
-        self.axes['all'] = self.fig.add_subplot(1, 1, 1)
-
-
 def plot_gantt(jobset, *, title='Gantt chart', **kwargs):
-    layout = GanttLayout(wtitle=title)
+    layout = core.SimpleLayout(wtitle=title)
     gantt = layout.register(GanttVisualization, axkey='all', title=title)
     bulksetattr(gantt, **kwargs)
     gantt.build(jobset)
