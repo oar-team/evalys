@@ -2,16 +2,9 @@
 
 import functools
 
+from evalys.utils import bulksetattr
 from evalys.visu import core
 from evalys.visu import gantt
-
-
-class SegmentedGanttFigure(core.EvalysFigure):
-    def __init__(self, *, wtitle='Gantt chart'):
-        super().__init__(wtitle=wtitle)
-        self.axes['gantt'] = self.fig.add_subplot(1, 1, 1)
-        self.visualizations['gantt'] = \
-                SegmentedGanttVisualization(self.axes['gantt'], title=wtitle)
 
 
 class SegmentedGanttVisualization(gantt.GanttVisualization):
@@ -52,12 +45,8 @@ class SegmentedGanttVisualization(gantt.GanttVisualization):
 
 
 def plot_segmented_gantt(jobset, *, title='Gantt chart', **kwargs):
-    fig = SegmentedGanttFigure(wtitle=title)
-    gantt = fig.visualizations['gantt']
-
-    for kw in kwargs:
-        getattr(gantt, kw)  # check .kw is a valid attribute, if not raise
-        setattr(gantt, kw, kwargs[kw])  # .kw is valid, update its value
-
+    layout = core.SimpleLayout(wtitle=title)
+    gantt = layout.register(SegmentedGanttVisualization, axkey='all', title=title)
+    bulksetattr(gantt, **kwargs)
     gantt.build(jobset)
-    fig.show()
+    layout.show()
