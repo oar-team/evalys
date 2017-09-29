@@ -12,6 +12,10 @@ from ..utils import bulksetattr
 
 
 class GanttVisualization(core.Visualization):
+
+    COLUMNS = ('jobID', 'allocated_processors', 'execution_time',
+               'finish_time', 'starting_time', 'submission_time')
+
     def __init__(self, ax, *, title='Gantt chart'):
         super().__init__(ax)
         self.title = title
@@ -19,14 +23,7 @@ class GanttVisualization(core.Visualization):
         self.alpha = 0.4
         self.colorer = self.round_robin_map
         self.labeler = lambda job: str(job['jobID'])
-        self._columns = (
-            'jobID',
-            'allocated_processors',
-            'execution_time',
-            'finish_time',
-            'starting_time',
-            'submission_time',
-        )
+        self._columns = type(self).COLUMNS
 
     @staticmethod
     def adapt_uniq_num(df):
