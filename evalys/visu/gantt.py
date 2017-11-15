@@ -2,8 +2,8 @@
 
 import functools
 
-import matplotlib.dates as mdates
-import matplotlib.patches as mpatch
+import matplotlib.dates as mpldates
+import matplotlib.patches as mplpatch
 import numpy as np
 import pandas as pd
 
@@ -37,8 +37,8 @@ class GanttVisualization(core.Visualization):
         df['execution_time'] = pd.to_timedelta(df['execution_time'], unit='s')
         df['finish_time'] = df['starting_time'] + df['execution_time']
         # convert columns to use them with matplotlib
-        df['starting_time'] = df['starting_time'].map(mdates.date2num)
-        df['finish_time'] = df['finish_time'].map(mdates.date2num)
+        df['starting_time'] = df['starting_time'].map(mpldates.date2num)
+        df['finish_time'] = df['finish_time'].map(mpldates.date2num)
         df['execution_time'] = df['finish_time'] - df['starting_time']
 
     def adapt(self, df):
@@ -68,7 +68,7 @@ class GanttVisualization(core.Visualization):
         duration = job['execution_time']
         for itv in job['allocated_processors'].intervals():
             height = itv.sup - itv.inf + 1
-            rect = mpatch.Rectangle(
+            rect = mplpatch.Rectangle(
                 (x0, itv.inf),
                 duration,
                 height,
@@ -94,7 +94,7 @@ class GanttVisualization(core.Visualization):
         self.ax.grid(True)
         if self.xscale == 'time':
             self.ax.xaxis.set_major_formatter(
-                mdates.DateFormatter('%Y-%m-%d\n%H:%M:%S')
+                mpldates.DateFormatter('%Y-%m-%d\n%H:%M:%S')
             )
 
 
@@ -135,7 +135,7 @@ class DiffGanttVisualization(GanttVisualization):
 
             # create a proxy object for the legend
             captions.append(
-                mpatch.Patch(color=color, alpha=self.alpha, label=js_name)
+                mplpatch.Patch(color=color, alpha=self.alpha, label=js_name)
             )
 
         # add legend to the visualization
@@ -146,7 +146,7 @@ class DiffGanttVisualization(GanttVisualization):
 
 def plot_gantt(jobset, *, title='Gantt chart', **kwargs):
     layout = core.SimpleLayout(wtitle=title)
-    gantt = layout.register(GanttVisualization, axkey='all', title=title)
+    gantt = layout.inject(GanttVisualization, axkey='all', title=title)
     bulksetattr(gantt, **kwargs)
     gantt.build(jobset)
     layout.show()
@@ -154,7 +154,7 @@ def plot_gantt(jobset, *, title='Gantt chart', **kwargs):
 
 def plot_diff_gantt(jobsets, *, title='Gantt charts comparison', **kwargs):
     layout = core.SimpleLayout(wtitle=title)
-    diff = layout.register(DiffGanttVisualization, axkey='all', title=title)
+    diff = layout.inject(DiffGanttVisualization, axkey='all', title=title)
     bulksetattr(diff, **kwargs)
     diff.build(jobsets)
     layout.show()
