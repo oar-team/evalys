@@ -1,17 +1,11 @@
 # coding: utf-8
 
-import functools
-
 from evalys.utils import bulksetattr
 from evalys.visu import core
 from evalys.visu import gantt
 
 
 class SegmentedGanttVisualization(gantt.GanttVisualization):
-    def __init__(self, ax, *, title='Gantt chart'):
-        super().__init__(ax, title=title)
-        self.labeler = functools.partial(self.merge_labeler, labeler=self.labeler)
-
     @staticmethod
     def adapt_uniq_num(df):
         unique_numbers = []
@@ -39,9 +33,15 @@ class SegmentedGanttVisualization(gantt.GanttVisualization):
         df['uniq_num'] = unique_numbers
         df['do_annotate'] = do_annotate
 
-    @staticmethod
-    def merge_labeler(job, labeler):
-        return labeler(job) if job['do_annotate'] else ''
+    @property
+    def labeler(self):
+        def _merge_labeler(job):
+            return self.__labeler(job) if job['do_annotate'] else ''
+        return _merge_labeler
+
+    @labeler.setter
+    def labeler(self, labeler):
+        self.__labeler = labeler
 
 
 def plot_segmented_gantt(jobset, *, title='Gantt chart', **kwargs):
