@@ -2,13 +2,13 @@
 
 import functools
 
-import matplotlib.dates as mpldates
-import matplotlib.patches as mplpatch
-import numpy as np
-import pandas as pd
+import matplotlib.dates
+import matplotlib.patches
+import numpy
+import pandas
 
 from . import core
-from ..utils import bulksetattr
+from .. import utils
 
 
 class GanttVisualization(core.Visualization):
@@ -27,18 +27,18 @@ class GanttVisualization(core.Visualization):
 
     @staticmethod
     def adapt_uniq_num(df):
-        df['uniq_num'] = np.arange(0, len(df))
+        df['uniq_num'] = numpy.arange(0, len(df))
 
     @staticmethod
     def adapt_time_xscale(df):
         # interpret columns with time aware semantics
-        df['submission_time'] = pd.to_datetime(df['submission_time'], unit='s')
-        df['starting_time'] = pd.to_datetime(df['starting_time'], unit='s')
-        df['execution_time'] = pd.to_timedelta(df['execution_time'], unit='s')
+        df['submission_time'] = pandas.to_datetime(df['submission_time'], unit='s')
+        df['starting_time'] = pandas.to_datetime(df['starting_time'], unit='s')
+        df['execution_time'] = pandas.to_timedelta(df['execution_time'], unit='s')
         df['finish_time'] = df['starting_time'] + df['execution_time']
         # convert columns to use them with matplotlib
-        df['starting_time'] = df['starting_time'].map(mpldates.date2num)
-        df['finish_time'] = df['finish_time'].map(mpldates.date2num)
+        df['starting_time'] = df['starting_time'].map(matplotlib.dates.date2num)
+        df['finish_time'] = df['finish_time'].map(matplotlib.dates.date2num)
         df['execution_time'] = df['finish_time'] - df['starting_time']
 
     def adapt(self, df):
@@ -68,7 +68,7 @@ class GanttVisualization(core.Visualization):
         duration = job['execution_time']
         for itv in job['allocated_processors'].intervals():
             height = itv.sup - itv.inf + 1
-            rect = mplpatch.Rectangle(
+            rect = matplotlib.patches.Rectangle(
                 (x0, itv.inf),
                 duration,
                 height,
@@ -94,7 +94,7 @@ class GanttVisualization(core.Visualization):
         self.ax.grid(True)
         if self.xscale == 'time':
             self.ax.xaxis.set_major_formatter(
-                mpldates.DateFormatter('%Y-%m-%d\n%H:%M:%S')
+                matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M:%S')
             )
 
 
@@ -135,7 +135,7 @@ class DiffGanttVisualization(GanttVisualization):
 
             # create a proxy object for the legend
             captions.append(
-                mplpatch.Patch(color=color, alpha=self.alpha, label=js_name)
+                matplotlib.patches.Patch(color=color, alpha=self.alpha, label=js_name)
             )
 
         # add legend to the visualization
@@ -146,15 +146,15 @@ class DiffGanttVisualization(GanttVisualization):
 
 def plot_gantt(jobset, *, title='Gantt chart', **kwargs):
     layout = core.SimpleLayout(wtitle=title)
-    gantt = layout.inject(GanttVisualization, axkey='all', title=title)
-    bulksetattr(gantt, **kwargs)
-    gantt.build(jobset)
+    plot = layout.inject(GanttVisualization, axkey='all', title=title)
+    utils.bulksetattr(plot, **kwargs)
+    plot.build(jobset)
     layout.show()
 
 
 def plot_diff_gantt(jobsets, *, title='Gantt charts comparison', **kwargs):
     layout = core.SimpleLayout(wtitle=title)
-    diff = layout.inject(DiffGanttVisualization, axkey='all', title=title)
-    bulksetattr(diff, **kwargs)
-    diff.build(jobsets)
+    plot = layout.inject(DiffGanttVisualization, axkey='all', title=title)
+    utils.bulksetattr(plot, **kwargs)
+    plot.build(jobsets)
     layout.show()
