@@ -2,3 +2,4 @@
 
 from .core import generate_palette, COLORBLIND_FRIENDLY_PALETTE
 from .gantt import plot_gantt, plot_diff_gantt
+from .series import plot_series
