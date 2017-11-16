@@ -46,7 +46,7 @@ class SegmentedGanttVisualization(gantt.GanttVisualization):
 
 def plot_segmented_gantt(jobset, *, title='Gantt chart', **kwargs):
     layout = core.SimpleLayout(wtitle=title)
-    gantt = layout.register(SegmentedGanttVisualization, axkey='all', title=title)
+    gantt = layout.inject(SegmentedGanttVisualization, axkey='all', title=title)
     bulksetattr(gantt, **kwargs)
     gantt.build(jobset)
     layout.show()
