@@ -37,6 +37,7 @@ class GanttVisualization(core.Visualization):
         df['execution_time'] = pandas.to_timedelta(df['execution_time'], unit='s')
         df['finish_time'] = df['starting_time'] + df['execution_time']
         # convert columns to use them with matplotlib
+        df['submission_time'] = df['submission_time'].map(matplotlib.dates.date2num)
         df['starting_time'] = df['starting_time'].map(matplotlib.dates.date2num)
         df['finish_time'] = df['finish_time'].map(matplotlib.dates.date2num)
         df['execution_time'] = df['finish_time'] - df['starting_time']
