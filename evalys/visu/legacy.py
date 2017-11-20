@@ -3,6 +3,7 @@
 from __future__ import unicode_literals, print_function
 
 import matplotlib
+import matplotlib.dates
 import matplotlib.patches as mpatch
 from matplotlib import pyplot as plt
 import numpy as np
@@ -429,9 +430,14 @@ def plot_job_details(dataframe, size, ax=None, title="Job details",
              ['starting_time', 'finish_time', 'green', size, size * 2]]
 
     if time_scale:
+        # interpret columns with time aware semantics
         df['submission_time'] = pd.to_datetime(df['submission_time'], unit='s')
         df['starting_time'] = pd.to_datetime(df['starting_time'], unit='s')
         df['finish_time'] = pd.to_datetime(df['finish_time'], unit='s')
+        # convert columns to use them with matplotlib
+        df['submission_time'] = df['submission_time'].map(matplotlib.dates.date2num)
+        df['starting_time'] = df['starting_time'].map(matplotlib.dates.date2num)
+        df['finish_time'] = df['finish_time'].map(matplotlib.dates.date2num)
 
     # select the axe
     plt.sca(ax)
@@ -453,9 +459,6 @@ def plot_job_details(dataframe, size, ax=None, title="Job details",
     # plot one point per serie
     for serie, color, marker, treshold in to_plot:
         x = df[serie]
-        if time_scale:
-            # Convert date to matplotlib float representation
-            x = x.dt.to_pydatetime()
         y = new_proc_alloc + treshold
         plt.scatter(x, y, c=color, marker=marker,
                     s=60, label=serie, alpha=0.5)
@@ -463,6 +466,10 @@ def plot_job_details(dataframe, size, ax=None, title="Job details",
     ax.grid(True)
     ax.legend()
     ax.set_title(title)
+    if time_scale:
+        ax.xaxis.set_major_formatter(
+            matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M:%S')
+        )
 
 
 def plot_series_comparison(series, ax=None, title="Series comparison"):
