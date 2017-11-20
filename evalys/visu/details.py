@@ -15,13 +15,16 @@ class DetailsLayout(core.EvalysLayout):
 
         gs = matplotlib.gridspec.GridSpec(nrows=4, ncols=1)
 
-        self.axes['gantt'] = self.fig.add_subplot(gs[3, :])
-        self.axes['lifecycle'] = \
-                self.fig.add_subplot(gs[2, :], sharex=self.axes['gantt'])
-        self.axes['queue'] = \
-                self.fig.add_subplot(gs[1, :], sharex=self.axes['gantt'])
-        self.axes['utilization'] = \
-                self.fig.add_subplot(gs[0, :], sharex=self.axes['gantt'])
+        visualizations = 'utilization', 'queue', 'lifecycle', 'gantt'
+        for idx, visu in enumerate(visualizations):
+            self.sps[visu] = gs[idx, :]
+
+    def show(self):
+        # hacky way to enforce sharing of axes
+        axes = self.fig.get_axes()
+        axes[0].get_shared_x_axes().join(*axes)
+
+        super().show()
 
 
 def plot_details(jobset, *, title='Workload overview', **kwargs):
@@ -33,8 +36,8 @@ def plot_details(jobset, *, title='Workload overview', **kwargs):
     }
 
     layout = DetailsLayout(wtitle=title)
-    for axkey, visu_cls in visualizations.items():
-        plot = layout.inject(visu_cls, axkey=axkey)
+    for spskey, visu_cls in visualizations.items():
+        plot = layout.inject(visu_cls, spskey=spskey)
         utils.bulksetattr(plot, **kwargs)
         plot.build(jobset)
     layout.show()

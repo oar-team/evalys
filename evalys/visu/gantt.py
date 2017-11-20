@@ -16,8 +16,8 @@ class GanttVisualization(core.Visualization):
     COLUMNS = ('jobID', 'allocated_processors', 'execution_time',
                'finish_time', 'starting_time', 'submission_time')
 
-    def __init__(self, ax, *, title='Gantt chart'):
-        super().__init__(ax)
+    def __init__(self, lspec, *, title='Gantt chart'):
+        super().__init__(lspec)
         self.title = title
         self.xscale = None
         self.alpha = 0.4
@@ -78,7 +78,7 @@ class GanttVisualization(core.Visualization):
                 edgecolor='black',
                 linewidth=0.5
             )
-            self.ax.add_artist(rect)
+            self._ax.add_artist(rect)
             self.annotate(rect, self.labeler(job))
 
     def build(self, jobset):
@@ -88,20 +88,20 @@ class GanttVisualization(core.Visualization):
         df.apply(self.plot_job, axis='columns')
 
         # tweak visualization appearance
-        self.ax.set(
+        self._ax.set(
             xlim=(df.submission_time.min(), df.finish_time.max()),
             ylim=(jobset.res_bounds.inf - 1, jobset.res_bounds.sup + 2),
         )
-        self.ax.grid(True)
+        self._ax.grid(True)
         if self.xscale == 'time':
-            self.ax.xaxis.set_major_formatter(
+            self._ax.xaxis.set_major_formatter(
                 matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M:%S')
             )
 
 
 class DiffGanttVisualization(GanttVisualization):
-    def __init__(self, ax, *, title='Gantt chart'):
-        super().__init__(ax, title=title)
+    def __init__(self, lspec, *, title='Gantt chart'):
+        super().__init__(lspec, title=title)
         self.alpha = 0.5
         self.colorer = lambda _, palette: palette[0]  # single color per jobset
         self.labeler = lambda _: ''  # do not label jobs
@@ -127,12 +127,12 @@ class DiffGanttVisualization(GanttVisualization):
             # tweak visualization appearance
             if idx:
                 # recompute xlim with respect to previous GanttVisualization
-                xmin, xmax = self.ax.get_xlim()
+                xmin, xmax = self._ax.get_xlim()
                 gxmin, gxmax = min(xmin, gxmin), max(xmax, gxmax)
-                self.ax.set_xlim(gxmin, gxmax)
+                self._ax.set_xlim(gxmin, gxmax)
             else:
                 # first GanttVisualization, save xlim as is
-                gxmin, gxmax = self.ax.get_xlim()
+                gxmin, gxmax = self._ax.get_xlim()
 
             # create a proxy object for the legend
             captions.append(
@@ -140,14 +140,14 @@ class DiffGanttVisualization(GanttVisualization):
             )
 
         # add legend to the visualization
-        self.ax.legend(handles=captions, loc='best')
+        self._ax.legend(handles=captions, loc='best')
 
         self.palette = _orig_palette  # restore original palette
 
 
 def plot_gantt(jobset, *, title='Gantt chart', **kwargs):
     layout = core.SimpleLayout(wtitle=title)
-    plot = layout.inject(GanttVisualization, axkey='all', title=title)
+    plot = layout.inject(GanttVisualization, spskey='all', title=title)
     utils.bulksetattr(plot, **kwargs)
     plot.build(jobset)
     layout.show()
@@ -155,7 +155,7 @@ def plot_gantt(jobset, *, title='Gantt chart', **kwargs):
 
 def plot_diff_gantt(jobsets, *, title='Gantt charts comparison', **kwargs):
     layout = core.SimpleLayout(wtitle=title)
-    plot = layout.inject(DiffGanttVisualization, axkey='all', title=title)
+    plot = layout.inject(DiffGanttVisualization, spskey='all', title=title)
     utils.bulksetattr(plot, **kwargs)
     plot.build(jobsets)
     layout.show()

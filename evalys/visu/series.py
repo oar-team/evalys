@@ -16,8 +16,8 @@ class SeriesVisualization(core.Visualization):
         except KeyError:
             raise KeyError('Unknown series: {}'.format(name))
 
-    def __init__(self, ax, *, title='Time Series plot'):
-        super().__init__(ax)
+    def __init__(self, lspec, *, title='Time Series plot'):
+        super().__init__(lspec)
         self.title = title
         self.xscale = None
 
@@ -25,7 +25,7 @@ class SeriesVisualization(core.Visualization):
         legacy.plot_load(
             load=getattr(jobset, self._metric),
             nb_resources=jobset.MaxProcs,
-            ax=self.ax,
+            ax=self._ax,
             time_scale=(self.xscale == 'time'),
             load_label=self.title
         )
@@ -47,19 +47,19 @@ def register(*, name, column=None):
 
 @register(name='queue')
 class QueueSeriesVisualization(SeriesVisualization):
-    def __init__(self, ax, *, title='Queue size'):
-        super().__init__(ax, title=title)
+    def __init__(self, lspec, *, title='Queue size'):
+        super().__init__(lspec, title=title)
 
 
 @register(name='utilization', column='utilisation')  # nasty misspell in original source code
 class UtilizationSeriesVisualization(SeriesVisualization):
-    def __init__(self, ax, *, title='Resources\' utilization'):
-        super().__init__(ax, title=title)
+    def __init__(self, lspec, *, title='Resources\' utilization'):
+        super().__init__(lspec, title=title)
 
 
 def plot_series(jobset, *, name, title='Time series plot', **kwargs):
     layout = core.SimpleLayout(wtitle=title)
-    plot = layout.inject(SeriesVisualization.factory(name), axkey='all')
+    plot = layout.inject(SeriesVisualization.factory(name), spskey='all')
     utils.bulksetattr(plot, **kwargs)
     plot.build(jobset)
     layout.show()

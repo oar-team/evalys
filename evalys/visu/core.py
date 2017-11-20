@@ -1,6 +1,8 @@
 # coding: utf-8
 
-from matplotlib import pyplot
+import collections
+
+import matplotlib.pyplot
 import numpy
 
 
@@ -8,7 +10,7 @@ def generate_palette(size):
     """
     Return of discrete palette with the specified number of different colors.
     """
-    return list(pyplot.cm.viridis(numpy.linspace(0, 1, size)))
+    return list(matplotlib.pyplot.cm.viridis(numpy.linspace(0, 1, size)))
 
 
 # pylint: disable=bad-whitespace
@@ -26,29 +28,31 @@ COLORBLIND_FRIENDLY_PALETTE = (
 # pylint: enable=bad-whitespace
 
 
+_LayoutSpec = collections.namedtuple('_LayoutSpec', ('fig', 'spec'))
+_LayoutSpec.__doc__ += ': Helper object to share the layout specifications'
+_LayoutSpec.fig.__doc__ = 'Figure to be used by the visualization'
+_LayoutSpec.spec.__doc__ = 'Root `SubplotSpec` for the visualization'
+
+
 class EvalysLayout:
     """
     Base layout to organize visualizations.
 
     :ivar fig: The actual figure to draw on.
 
-    :ivar axes: The available Axes in the layout.
+    :ivar sps: The `SubplotSpec` defined in the layout.
     :vartype axes: dict
 
     :ivar visualizations:
-        Binding of the visualizations using the layout. For each key `axkey` in
-        `self.axes`, `self.visualizations[axkey]` is a list of the
-        visualizations targeting `self.axes[axkey]`.
+        Binding of the visualizations injected into the layout.
+        For each key `spskey` in `self.sps`, `self.visualizations[spskey]` is a
+        list of the visualizations with root `SubplotSpec` `self.sps[spskey]`.
     :vartype visualizations: dict
-
-    :ivar wtitle: The title of the window containing the layout.
-    :vartype wtitle: str
-
     """
 
     def __init__(self, *, wtitle='Evalys Figure'):
-        self.fig = pyplot.figure()
-        self.axes = {}
+        self.fig = matplotlib.pyplot.figure()
+        self.sps = {}
         self.visualizations = {}
         self.wtitle = wtitle
 
@@ -58,17 +62,18 @@ class EvalysLayout:
         """
         self.fig.show()
 
-    def inject(self, visu_cls, axkey, *args, **kwargs):
+    def inject(self, visu_cls, spskey, *args, **kwargs):
         """
         Create a visualization, and bind it to the layout.
 
         :param visu_cls:
-            The class of the visualization to create. This should be a
-            Visualization or one of its subclass.
+            The class of the visualization to create.  This should be
+            `Visualization` or one of its subclass.
 
-        :param axkey:
-            The key identifying the axis the Visualization is using. This key
-            must exist in self.axes.
+        :param spskey:
+            The key identifying the `SubplotSpec` fed to the injected
+            `Visualization` (or a subclass).  This key must exist in
+            `self.sps`.
 
         :param *args:
             The positional arguments to be fed to the constructor of the
@@ -80,15 +85,17 @@ class EvalysLayout:
 
         :returns: The newly created visualization.
         :rtype: visu_cls
-
         """
-        ax = self.axes[axkey]
-        new_visu = visu_cls(ax, *args, **kwargs)
-        self.visualizations.setdefault(axkey, []).append(new_visu)
+        lspec = _LayoutSpec(fig=self.fig, spec=self.sps[spskey])
+        new_visu = visu_cls(lspec, *args, **kwargs)
+        self.visualizations.setdefault(spskey, []).append(new_visu)
         return new_visu
 
     @property
     def wtitle(self):
+        """
+        The title of the window containing the layout.
+        """
         return self.fig.canvas.get_window_title()
 
     @wtitle.setter
@@ -98,34 +105,58 @@ class EvalysLayout:
 
 class SimpleLayout(EvalysLayout):
     """
-    Simplest possible layout with a single Axe using all available space.
+    Simplest possible layout that uses all available space.
     """
 
     def __init__(self, *, wtitle='Simple Figure'):
         super().__init__(wtitle=wtitle)
-        self.axes['all'] = self.fig.add_subplot(1, 1, 1)
+        self.sps['all'] = matplotlib.gridspec.GridSpec(nrows=1, ncols=1)[0]
 
 
 class Visualization:
     """
     Base class to define visualizations.
 
-    :ivar ax: The Axe to draw on.
+    :ivar _lspec: The specification of the layout for the visualization.
+    :vartype _lspec: _LayoutSpec
+
+    :ivar _ax: The `Axe` to draw on.
 
     :ivar palette: The palette of colors to be used.
-
-    :ivar title: The title of the visualization.
-    :vartype title: str
     """
 
-    def __init__(self, ax):
-        self.ax = ax
+    def __init__(self, lspec):
+        self._lspec = lspec
+        self._ax = None
+        self._set_axes()
+
         self.palette = generate_palette(8)
+
+    def _set_axes(self):
+        """
+        Given the `_LayoutSpec` in `self._lspec`, populate `self._ax`.
+
+        Note that `self._ax` is set to use all the available space given by
+        `self._lspec`.
+        """
+        gs = matplotlib.gridspec.GridSpecFromSubplotSpec(
+            nrows=1, ncols=1, subplot_spec=self._lspec.spec
+        )
+        self._ax = self._lspec.fig.add_subplot(gs[0])
+
+    def build(self, jobset):
+        """
+        Extract meaningful data from `jobset`, and create the plot.
+        """
+        raise NotImplementedError()
 
     @property
     def title(self):
-        return self.ax.get_title()
+        """
+        Title of the visualization.
+        """
+        return self._ax.get_title()
 
     @title.setter
     def title(self, title):
-        self.ax.set_title(title)
+        self._ax.set_title(title)
