@@ -12,6 +12,46 @@ from .. import utils
 
 
 class GanttVisualization(core.Visualization):
+    """
+    Visualization of a jobset as a Gantt chart.
+
+    The `GanttVisualization` class displays a jobset as a Gantt chart.  Each
+    job in the jobset is represented as a set of rectangle.
+    The x-axis represents time, while the y-axis represents resources.
+
+    :cvar COLUMNS: The columns required to build the visualization.
+
+    :ivar _lspec: The specification of the layout for the visualization.
+    :vartype _lspec: `core._LayoutSpec`
+
+    :ivar _ax: The `Axe` to draw on.
+
+    :ivar palette: The palette of colors to be used.
+
+    :ivar xscale:
+        The requested adaptation of the x-axis scale.
+        Valid values are `None`, and `'time'`.
+        - It defaults to `None`, and uses raw values by default.
+        - If set to `time`, the x-axis interprets the data as timestamps, and
+          uses a time-aware semantic.
+
+    :ivar alpha:
+        The transparency level of the rectangles depicting jobs.  It defaults
+        to `0.4`.
+    :vartype alpha: float
+
+    :ivar colorer:
+        The strategy to assign a color to a job.  By default, the colors of the
+        palette are picked with a round-robin strategy.
+        The colorer is a function expecting two positional parameters: first
+        the `job`, and second the `palette`.
+        See `GanttVisualization.round_robin_map` for an example.
+
+    :ivar labeler:
+        The strategy to label jobs.  By default, the `jobID` column is used to
+        label jobs.
+        To disable the labeling of jobs, simply return an empty string.
+    """
 
     COLUMNS = ('jobID', 'allocated_processors', 'execution_time',
                'finish_time', 'starting_time', 'submission_time', )
@@ -154,6 +194,19 @@ class DiffGanttVisualization(GanttVisualization):
 
 
 def plot_gantt(jobset, *, title='Gantt chart', **kwargs):
+    """
+    Helper function to create a Gantt chart of a workload.
+
+    :param jobset: The jobset under study.
+    :type jobset: `JobSet`
+
+    :param title: The title of the window.
+    :type title: str
+
+    :param **kwargs:
+        The keyword arguments to be fed to the constructor of the visualization
+        class.
+    """
     layout = core.SimpleLayout(wtitle=title)
     plot = layout.inject(GanttVisualization, spskey='all', title=title)
     utils.bulksetattr(plot, **kwargs)
@@ -162,6 +215,20 @@ def plot_gantt(jobset, *, title='Gantt chart', **kwargs):
 
 
 def plot_diff_gantt(jobsets, *, title='Gantt charts comparison', **kwargs):
+    """
+    Helper function to create a comparison of Gantt charts of two (or more)
+    workloads.
+
+    :param jobsets: The jobsets under study.
+    :type jobset: list(JobSet)
+
+    :param title: The title of the window.
+    :type title: str
+
+    :param **kwargs:
+        The keyword arguments to be fed to the constructor of the visualization
+        class.
+    """
     layout = core.SimpleLayout(wtitle=title)
     plot = layout.inject(DiffGanttVisualization, spskey='all', title=title)
     utils.bulksetattr(plot, **kwargs)

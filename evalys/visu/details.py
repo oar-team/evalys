@@ -10,6 +10,12 @@ from .. import utils
 
 
 class DetailsLayout(core.EvalysLayout):
+    """
+    Layout in 4 horizontal stripes.
+
+    This layout is a support to combine various already-existing
+    visualizations.
+    """
     def __init__(self, *, wtitle='Detailed Figure'):
         super().__init__(wtitle=wtitle)
 
@@ -28,6 +34,19 @@ class DetailsLayout(core.EvalysLayout):
 
 
 def plot_details(jobset, *, title='Workload overview', **kwargs):
+    """
+    Helper function to create a detailed overview of a workload.
+
+    :param jobset: The jobset under study.
+    :type jobset: `JobSet`
+
+    :param title: The title of the window.
+    :type title: str
+
+    :param **kwargs:
+        The keyword arguments to be fed to the constructors of the
+        visualization classes.
+    """
     visualizations = {
         'gantt': gantt.GanttVisualization,
         'lifecycle': lifecycle.LifecycleVisualization,

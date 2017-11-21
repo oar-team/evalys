@@ -11,6 +11,60 @@ from .. import utils
 
 
 class LifecycleVisualization(core.Visualization):
+    """
+    Visualization of the lifecycle of jobs in a jobset.
+
+    The `LifecycleVisualization` class displays for each job its associated
+    events.  The visualization is divided into horizontal stripes.  Each stripe
+    corresponds to an event type.
+    The x-axis represents time, while the y-axis represents the size of the
+    jobs.
+
+    :cvar COLUMNS: The columns required to build the visualization.
+
+    :cvar _events: The supported events.
+
+    :ivar _lspec: The specification of the layout for the visualization.
+    :vartype _lspec: _LayoutSpec
+
+    :ivar _ax:
+        A dictionnary containing the instances of `Axe` to draw on.  There is
+        an instance per stripe, each stripe `Axe` is identified by the event
+        name (cf. `self._events`).
+
+    :ivar palette: The palette of colors to be used.
+
+    :ivar markers:
+        The markers to use for each event type.  It defaults to
+        `('.', '>', '|')`.
+        The strings must be valid markers for matplotlib.
+        Each marker is associated with the event of same index in
+        `self._events`.
+
+    :ivar markersizes:
+        The size to use for each of the markers.  It defaults to `(10, 8, 15)`.
+        Each size is associated to the marker associated with the event of same
+        index in `self._events`.
+
+    :ivar alpha:
+        The transparency level for the markers.  It defaults to `0.5`.
+        The transparency level of the links is set to `0.4 * self.alpha`.
+    :vartype alpha: float
+
+    :ivar xscale:
+        The requested adaptation of the x-axis scale.
+        Valid values are `None`, and `'time'`.
+        - It defaults to `None`, and uses raw values by default.
+        - If set to `time`, the x-axis interprets the data as timestamps, and
+          uses a time-aware semantic.
+
+    :ivar yscale:
+        The requested adaptation of the y-axis scale.
+        Valid values are `None`, and `'log2'`.
+        - It defaults to `None`, and uses raw values by default.
+        - If set to `log2`, the y-axis is transformed to show the values on a
+          logarithmic scale in base 2.
+    """
 
     COLUMNS = ('allocated_processors', 'finish_time', 'starting_time',
                'submission_time', )
@@ -142,6 +196,19 @@ class LifecycleVisualization(core.Visualization):
 
 
 def plot_lifecycle(jobset, *, title='Jobs\' life cycle', **kwargs):
+    """
+    Helper function to create a lifecycle visualization of a workload.
+
+    :param jobset: The jobset under study.
+    :type jobset: `JobSet`
+
+    :param title: The title of the window.
+    :type title: str
+
+    :param **kwargs:
+        The keyword arguments to be fed to the constructor of the visualization
+        class.
+    """
     layout = core.SimpleLayout(wtitle=title)
     plot = layout.inject(LifecycleVisualization, spskey='all', title=title)
     utils.bulksetattr(plot, **kwargs)
