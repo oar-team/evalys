@@ -14,7 +14,7 @@ from .. import utils
 class GanttVisualization(core.Visualization):
 
     COLUMNS = ('jobID', 'allocated_processors', 'execution_time',
-               'finish_time', 'starting_time', 'submission_time')
+               'finish_time', 'starting_time', 'submission_time', )
 
     def __init__(self, lspec, *, title='Gantt chart'):
         super().__init__(lspec)
@@ -23,7 +23,7 @@ class GanttVisualization(core.Visualization):
         self.alpha = 0.4
         self.colorer = self.round_robin_map
         self.labeler = lambda job: str(job['jobID'])
-        self._columns = type(self).COLUMNS
+        self._columns = self.COLUMNS
 
     @staticmethod
     def adapt_uniq_num(df):
