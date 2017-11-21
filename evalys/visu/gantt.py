@@ -100,7 +100,7 @@ class GanttVisualization(core.Visualization):
 
 
 class DiffGanttVisualization(GanttVisualization):
-    def __init__(self, lspec, *, title='Gantt chart'):
+    def __init__(self, lspec, *, title='Gantt charts comparison'):
         super().__init__(lspec, title=title)
         self.alpha = 0.5
         self.colorer = lambda _, palette: palette[0]  # single color per jobset
