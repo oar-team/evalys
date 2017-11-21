@@ -10,7 +10,7 @@ from .. import utils
 
 
 class DetailsLayout(core.EvalysLayout):
-    def __init__(self, *, wtitle='Workload overview'):
+    def __init__(self, *, wtitle='Detailed Figure'):
         super().__init__(wtitle=wtitle)
 
         gs = matplotlib.gridspec.GridSpec(nrows=4, ncols=1)
