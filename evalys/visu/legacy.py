@@ -1,7 +1,9 @@
 # coding: utf-8
+
 from __future__ import unicode_literals, print_function
 
 import matplotlib
+import matplotlib.dates
 import matplotlib.patches as mpatch
 from matplotlib import pyplot as plt
 import numpy as np
@@ -9,30 +11,12 @@ import pandas as pd
 import seaborn as sns
 import random
 
-from evalys import metrics
+from . import core
+from .. import metrics
 
 matplotlib.rcParams['figure.figsize'] = (12.0, 8.0)
 
 available_series = ['bonded_slowdown', 'waiting_time', 'all']
-
-
-def generate_color_set(nb_colors):
-    colors = iter(plt.cm.viridis(np.linspace(0, 1, nb_colors)))
-    return list(colors)
-
-def generate_colorblind_friendly_palette():
-    # http://jfly.iam.u-tokyo.ac.jp/color/#pallet
-    cbf_palette = [
-        '#999999',        # grey
-        ( .9,  .6,   0),  # orange
-        (.35,  .7,  .9),  # sky blue
-        (  0,  .6,  .5),  # bluish green
-        (.95,  .9, .25),  # yellow
-        (  0, .45,  .7),  # blue
-        ( .8,  .4,   0),  # vermillion
-        ( .8,  .6,  .7),  # reddish purple
-    ]
-    return cbf_palette
 
 
 def annotate(ax, rect, annot):
@@ -100,7 +84,7 @@ def plot_gantt(jobset, ax=None, title="Gantt chart",
                label_function=None):
     # Palette generation if needed
     if palette is None:
-        palette = generate_color_set(8)
+        palette = core.generate_palette(8)
     assert(len(palette) > 0)
 
     if color_function is None:
@@ -295,7 +279,7 @@ def plot_processor_load(jobset, ax=None, title="Load", labels=True):
             annotate(ax, rect, label)
         ax.add_artist(rect)
 
-    RGB_tuples = generate_color_set(16)
+    RGB_tuples = core.generate_palette(16)
     load = {
         p: 0.0 for p in range(jobset.res_bounds[0], jobset.res_bounds[1] + 1)
     }
@@ -378,7 +362,7 @@ def plot_gantt_general_shape(jobset_list, ax=None, alpha=0.3,
         ax = plt.gca()
 
     color_index = 0
-    RGB_tuples = generate_color_set(len(jobset_list))
+    RGB_tuples = core.generate_palette(len(jobset_list))
     legend_rect = []
     legend_label = []
     xmin = None
@@ -446,9 +430,14 @@ def plot_job_details(dataframe, size, ax=None, title="Job details",
              ['starting_time', 'finish_time', 'green', size, size * 2]]
 
     if time_scale:
+        # interpret columns with time aware semantics
         df['submission_time'] = pd.to_datetime(df['submission_time'], unit='s')
         df['starting_time'] = pd.to_datetime(df['starting_time'], unit='s')
         df['finish_time'] = pd.to_datetime(df['finish_time'], unit='s')
+        # convert columns to use them with matplotlib
+        df['submission_time'] = df['submission_time'].map(matplotlib.dates.date2num)
+        df['starting_time'] = df['starting_time'].map(matplotlib.dates.date2num)
+        df['finish_time'] = df['finish_time'].map(matplotlib.dates.date2num)
 
     # select the axe
     plt.sca(ax)
@@ -470,9 +459,6 @@ def plot_job_details(dataframe, size, ax=None, title="Job details",
     # plot one point per serie
     for serie, color, marker, treshold in to_plot:
         x = df[serie]
-        if time_scale:
-            # Convert date to matplotlib float representation
-            x = x.dt.to_pydatetime()
         y = new_proc_alloc + treshold
         plt.scatter(x, y, c=color, marker=marker,
                     s=60, label=serie, alpha=0.5)
@@ -480,6 +466,10 @@ def plot_job_details(dataframe, size, ax=None, title="Job details",
     ax.grid(True)
     ax.legend()
     ax.set_title(title)
+    if time_scale:
+        ax.xaxis.set_major_formatter(
+            matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M:%S')
+        )
 
 
 def plot_series_comparison(series, ax=None, title="Series comparison"):

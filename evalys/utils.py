@@ -1,3 +1,20 @@
+# -*- coding: utf-8 -*-
+
+def bulksetattr(obj, **kwargs):
+    """
+    Safely assign attributes in bulk.
+
+    For each keyword argument kw, the function checks that kw is the name of
+    one of the object's attributes.
+    If kw is not the name of an attribute, the function raises an
+    AttributeError. Otherwise, the function assigns the value of the keyword
+    argument to the attribute, provided the object allows it.
+    """
+    for attr in kwargs:
+        getattr(obj, attr)  # check attr is a valid attribute, if not raise
+        setattr(obj, attr, kwargs[attr])  # attr is valid, update its value
+
+
 def cut_workload(workload_df, begin_time, end_time):
     """
     Extract any workload dataframe between begin_time and end_time.

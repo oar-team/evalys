@@ -8,7 +8,7 @@ from evalys import *
 from evalys.jobset import *
 from evalys.mstates import *
 from evalys.pstates import *
-from evalys.visu import *
+from evalys.visu.legacy import *
 
 import pandas as pd
 import matplotlib.pyplot as plt

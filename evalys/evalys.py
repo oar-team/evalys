@@ -17,7 +17,7 @@ if not os.environ.get('DISPLAY'):
 
 import matplotlib.pyplot as plt
 from evalys.jobset import JobSet
-from evalys.visu import plot_gantt_general_shape, available_series, plot_series
+from evalys.visu.legacy import plot_gantt_general_shape, available_series, plot_series
 
 
 def unique_file_name(file_dict, file_name, index=1):
@@ -97,7 +97,7 @@ def main():
         file_name = unique_file_name(jobsets, file_name)
         jobsets[file_name] = js
         if args.gantt:
-            js.gantt(ax_list[index], file_name)
+            js.gantt(ax=ax_list[index], title=file_name)
             index += 1
 
     if args.gantt_diff:

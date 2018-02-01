@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from evalys import visu
+import evalys.visu.legacy as vleg
 from procset import ProcInt, ProcSet
 from evalys.metrics import compute_load, load_mean, fragmentation_reis, fragmentation
 
@@ -138,8 +139,10 @@ class JobSet(object):
             df.to_csv(f, index=False, sep=",",
                       float_format='%.{}f'.format(self.float_precision))
 
-    def gantt(self, ax=None, title="Gantt chart", time_scale=False):
-        visu.plot_gantt(self, ax, title, time_scale=time_scale)
+    def gantt(self, time_scale=False, **kwargs):
+        if time_scale:
+            kwargs['xscale'] = 'time'
+        visu.plot_gantt(self, **kwargs)
 
     @property
     def utilisation(self):
@@ -191,16 +194,16 @@ class JobSet(object):
         fig, axe = plt.subplots(nrows=nrows, sharex=True)
         if title:
             fig.suptitle(title, fontsize=16)
-        visu.plot_load(self.utilisation, self.MaxProcs,
+        vleg.plot_load(self.utilisation, self.MaxProcs,
                        load_label="utilisation", ax=axe[0],
                        normalize=normalize, time_scale=time_scale)
-        visu.plot_load(self.queue, self.MaxProcs,
+        vleg.plot_load(self.queue, self.MaxProcs,
                        load_label="queue", ax=axe[1], normalize=normalize,
                        time_scale=time_scale)
         if with_details:
-            visu.plot_job_details(self.df, self.MaxProcs, ax=axe[2],
+            vleg.plot_job_details(self.df, self.MaxProcs, ax=axe[2],
                                   time_scale=time_scale)
-            visu.plot_gantt(self, ax=axe[3], time_scale=time_scale)
+            vleg.plot_gantt(self, ax=axe[3], time_scale=time_scale)
 
     def detailed_utilisation(self):
         df = self.free_intervals()
