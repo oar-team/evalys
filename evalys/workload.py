@@ -50,10 +50,6 @@ class Workload(object):
         between termination of this preceding job. Together with the next
         field, this allows the workload to include feedback as described
         below.
-    18) Think Time from Preceding Job -- this is the number of seconds that
-        should elapse between the termination of the preceding job and the
-        submittal of this one.
-
     '''
     metadata = {
      'Version': '''
