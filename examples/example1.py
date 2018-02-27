@@ -9,6 +9,6 @@ print(js.df.describe())
 
 js.df.hist()
 
-fig, axe = plt.subplots()
-js.gantt(axe, "test")
+#fig, axe = plt.subplots()
+js.gantt()
 plt.show()
