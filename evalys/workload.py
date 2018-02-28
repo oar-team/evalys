@@ -50,10 +50,6 @@ class Workload(object):
         between termination of this preceding job. Together with the next
         field, this allows the workload to include feedback as described
         below.
-    18) Think Time from Preceding Job -- this is the number of seconds that
-        should elapse between the termination of the preceding job and the
-        submittal of this one.
-
     '''
     metadata = {
      'Version': '''
@@ -153,11 +149,13 @@ class Workload(object):
     # clean metadata layout
     metadata = {k: ' '.join(v.split()) for k, v in metadata.items()}
 
-    def __init__(self, dataframe, **kwargs):
+    def __init__(self, dataframe, wkd_format='swf', **kwargs):
         ''' dataframe should be an swf imported format and metadata can be
         provided in kargs.'''
 
         self.df = dataframe
+        self.format = wkd_format
+        
         for key, value in kwargs.items():
             # cast integer
             if key.startswith('Max'):
@@ -190,16 +188,50 @@ class Workload(object):
     @classmethod
     def from_csv(cls, filename):
         '''
-        Import SWF CSV file.
-        :param filename: SWF file path
+        Import SWF or OWF CSV file.
+        :param filename: SWF or OWF file path
         '''
-        columns = ['jobID', 'submission_time', 'waiting_time',
-                   'execution_time', 'proc_alloc', 'cpu_used', 'mem_used',
-                   'proc_req', 'user_est', 'mem_req', 'status', 'uid',
-                   'gid', 'exe_num', 'queue', 'partition', 'prev_jobs',
-                   'think_time']
-        df = pd.read_csv(filename, comment=';', names=columns,
+        file_extension = filename.split('.')[-1] 
+
+        # If not recognize as owf swf is the default
+        if file_extension != 'owf':
+            file_extension = 'swf'
+
+        if file_extension == 'swf':
+            columns = ['jobID', 'submission_time', 'waiting_time',
+                       'execution_time', 'proc_alloc', 'cpu_used', 'mem_used',
+                       'proc_req', 'user_est', 'mem_req', 'status', 'uid',
+                       'gid', 'exe_num', 'queue', 'partition', 'prev_jobs',
+                       'think_time']
+        else:
+            columns = ['job_id', 'submission_time', 'start_time', 'stop_time', 'walltime',
+                       'nb_default_ressources', 'nb_extra_ressources', 'status', 'user',
+                       'command', 'queue', 'name', 'array', 'type', 'reservation', 'cigri_id']
+            
+        df_tmp = pd.read_csv(filename, comment=';', names=columns,
                          header=0, delim_whitespace=True)
+
+        if file_extension == 'owf':
+            # 
+            # OWF Dataframe manipulations to provide SWF compatibility
+            #
+            df = df_tmp.copy()
+            # Renaming some columns
+            df_tmp = df_tmp.rename(columns={'job_id': 'jobID', 'nb_default_ressources': 'proc_alloc',
+                                            'walltime': 'user_est', 'user': 'uid'}) 
+            df = df.join(df_tmp[['jobID', 'proc_alloc', 'user_est', 'uid' ]])
+
+            # Duplication w/ renaming 
+            df_tmp = df_tmp.rename(columns={'proc_alloc': 'proc_req'})
+            df = df.join(df_tmp[['proc_req']])
+
+            # Compute missing columns
+            df['waiting_time'] = df['start_time'] - df['submission_time']
+            df['execution_time'] = df['stop_time'] - df['start_time']
+
+        else:
+           df = df_tmp
+           
         # sanitize trace
         # - remove job checkpoint information (job status != 0 or 1)
         df = df[df['status'] <= 1]
@@ -218,7 +250,7 @@ class Workload(object):
                 # header is finished
                 break
 
-        return cls(df, **metadata)
+        return cls(df, file_extension, **metadata)
 
     def to_csv(self, filename):
         '''
