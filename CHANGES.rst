@@ -1,11 +1,9 @@
 .. :changelog:
 
-0.1.0 changelog
+4.0.0 changelog
 ============================================
 
-Version 0.1.0.dev0
+Version 4.0.0
 ------------------
 
-**unreleased**
-
-- First release on PyPI.
+- Fits with the new trace format of Batsim 3.0
