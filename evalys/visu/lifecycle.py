@@ -66,7 +66,7 @@ class LifecycleVisualization(core.Visualization):
           logarithmic scale in base 2.
     """
 
-    COLUMNS = ('allocated_processors', 'finish_time', 'starting_time',
+    COLUMNS = ('allocated_resources', 'finish_time', 'starting_time',
                'submission_time', )
 
     _events = ('submit', 'start', 'finish')
@@ -147,7 +147,7 @@ class LifecycleVisualization(core.Visualization):
 
     @staticmethod
     def _adapt_jobsize(df):
-        df['jobsize'] = df['allocated_processors'].map(len)
+        df['jobsize'] = df['allocated_resources'].map(len)
 
     def _adapt_time_xscale(self, df):
         for column in self._ev2col.values():

@@ -48,7 +48,7 @@ def map_unique_numbers(df):
         workload_name = str(row["workload_name"])
         job_id = str(row["jobID"])
         full_job_id = workload_name + "!" + job_id
-        job_intervals=row['allocated_processors']
+        job_intervals=row['allocated_resources']
 
         try:
             # The job id was already in the workload: re-use the same unique id.
@@ -112,7 +112,7 @@ def plot_gantt(jobset, ax=None, title="Gantt chart",
     def plot_job(job):
         col = color_function(job, palette)
         duration = job['execution_time']
-        for itv in job['allocated_processors'].intervals():
+        for itv in job['allocated_resources'].intervals():
             (y0, y1) = itv
             x0 = job['starting_time']
             if time_scale:
@@ -266,7 +266,7 @@ def plot_processor_load(jobset, ax=None, title="Load", labels=True):
     """
     Display the impact of each job on the load of each processor.
 
-    need: execution_time, jobID, allocated_processors
+    need: execution_time, jobID, allocated_resources
     """
 
     # Get current axe to plot
@@ -289,10 +289,10 @@ def plot_processor_load(jobset, ax=None, title="Load", labels=True):
         duration = row.execution_time
         label = row.jobID if labels else None
 
-        baseproc = next(iter(row.allocated_processors))
+        baseproc = next(iter(row.allocated_resources))
         base = (baseproc, load[baseproc])
         width = 0  # width is incremented in the first loop iteration
-        for proc in row.allocated_processors:
+        for proc in row.allocated_resources:
             if base[0] + width != proc or load[proc] != base[1]:
                 # we cannot merge across processors: draw the current
                 # rectangle, and start anew
@@ -379,7 +379,7 @@ def plot_gantt_general_shape(jobset_list, ax=None, alpha=0.3,
 
         def plot_job(job):
             duration = job['execution_time']
-            for itv in job['allocated_processors'].intervals():
+            for itv in job['allocated_resources'].intervals():
                 (y0, y1) = itv
                 rect = mpatch.Rectangle((job['starting_time'], y0), duration,
                                         y1 - y0 + 0.9, alpha=alpha,

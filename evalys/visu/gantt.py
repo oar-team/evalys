@@ -53,7 +53,7 @@ class GanttVisualization(core.Visualization):
         To disable the labeling of jobs, simply return an empty string.
     """
 
-    COLUMNS = ('jobID', 'allocated_processors', 'execution_time',
+    COLUMNS = ('jobID', 'allocated_resources', 'execution_time',
                'finish_time', 'starting_time', 'submission_time', )
 
     def __init__(self, lspec, *, title='Gantt chart'):
@@ -117,7 +117,7 @@ class GanttVisualization(core.Visualization):
         def _plot_job(job):
             x0 = job['starting_time']
             duration = job['execution_time']
-            for itv in job['allocated_processors'].intervals():
+            for itv in job['allocated_resources'].intervals():
                 height = itv.sup - itv.inf + 1
                 rect = matplotlib.patches.Rectangle(
                     (x0, itv.inf),

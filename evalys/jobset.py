@@ -17,7 +17,7 @@ class JobSet(object):
     It takes a dataframe in input that are intended to have the columns
     defined in :py::`JobSet.columns`.
 
-    The `allocated_processors` one should contain the string representation
+    The `allocated_resources` one should contain the string representation
     of an interval set of the allocated resources for the given job, i.e.
     for this interval::
 
@@ -60,12 +60,12 @@ class JobSet(object):
                         pass
 
             self.res_bounds = ProcInt(
-                min(alloc_apply(lambda pset: pset.min, self.df.allocated_processors)),
-                max(alloc_apply(lambda pset: pset.max, self.df.allocated_processors))
+                min(alloc_apply(lambda pset: pset.min, self.df.allocated_resources)),
+                max(alloc_apply(lambda pset: pset.max, self.df.allocated_resources))
             )
         self.MaxProcs = len(self.res_bounds)
 
-        self.df['proc_alloc'] = self.df.allocated_processors.apply(len)
+        self.df['proc_alloc'] = self.df.allocated_resources.apply(len)
 
         # Add missing columns if possible
         fillable_relative = all(
@@ -103,7 +103,7 @@ class JobSet(object):
     __converters = {
         'jobID': str,
         'job_id': str,
-        'allocated_processors': ProcSet.from_str,
+        'allocated_resources': ProcSet.from_str,
     }
 
     columns = ['jobID',
@@ -117,7 +117,7 @@ class JobSet(object):
                'waiting_time',
                'turnaround_time',
                'stretch',
-               'allocated_processors']
+               'allocated_resources']
 
     @classmethod
     def from_csv(cls, filename, resource_bounds=None):
@@ -134,7 +134,7 @@ class JobSet(object):
         >>> js.to_csv("/tmp/jobs.csv")
         """
         df = self.df.copy()
-        df.allocated_processors = df.allocated_processors.apply(str)
+        df.allocated_resources = df.allocated_resources.apply(str)
         with open(filename, 'w') as f:
             df.to_csv(f, index=False, sep=",",
                       float_format='%.{}f'.format(self.float_precision))
@@ -227,13 +227,13 @@ class JobSet(object):
         # Used -> Free : grab = 0
         event_columns = ['time', 'free_itvs', 'grab']
         start_event_df = pd.concat([df['starting_time'],
-                                    df['allocated_processors'],
+                                    df['allocated_resources'],
                                     pd.Series(np.ones(len(df), dtype=bool))],
                                    axis=1)
         start_event_df.columns = event_columns
         # Stop event have zero in grab
         stop_event_df = pd.concat([df['finish_time'],
-                                   df['allocated_processors'],
+                                   df['allocated_resources'],
                                    pd.Series(np.zeros(len(df), dtype=bool))],
                                   axis=1)
         stop_event_df.columns = event_columns
@@ -287,7 +287,7 @@ class JobSet(object):
         free_interval_serie = self.free_intervals(begin_time, end_time)
         slots_time = [(free_interval_serie.time[0], ProcSet(self.res_bounds))]
         new_slots_time = slots_time
-        columns = ['jobID', 'allocated_processors',
+        columns = ['jobID', 'allocated_resources',
                    'starting_time', 'finish_time', 'execution_time',
                    'submission_time']
         free_slots_df = pd.DataFrame(columns=columns)
@@ -371,7 +371,7 @@ class JobSet(object):
 
         def get_free_slots_by_resources(x):
             for res in range(resource_intervals[0], resource_intervals[1] + 1):
-                if res in x.allocated_processors:
+                if res in x.allocated_resources:
                     free_resources_gaps[res - resource_intervals[0]].append(x.execution_time)
 
         # compute resource gaps
