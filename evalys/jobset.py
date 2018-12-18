@@ -108,7 +108,7 @@ class JobSet(object):
 
     columns = ['jobID',
                'submission_time',
-               'requested_number_of_processors',
+               'requested_number_of_resources',
                'requested_time',
                'success',
                'starting_time',
@@ -166,7 +166,7 @@ class JobSet(object):
         if self._queue is not None:
             return self._queue
 
-        proc = "requested_number_of_processors"
+        proc = "requested_number_of_resources"
         self._queue = compute_load(self.df, 'submission_time', 'starting_time',
                                    proc)
         return self._queue
