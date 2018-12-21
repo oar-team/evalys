@@ -45,6 +45,8 @@ class JobSet(object):
     ...                      resource_bounds=(0, 63))
     '''
     def __init__(self, df, resource_bounds=None, float_precision=6):
+        # reset the index of the dataframe
+        df = df.reset_index()
         # set float round precision
         self.float_precision = float_precision
         self.df = np.round(df, float_precision)
@@ -103,6 +105,8 @@ class JobSet(object):
     __converters = {
         'jobID': str,
         'job_id': str,
+        'workload': str,
+        'profile': str,
         'allocated_resources': ProcSet.from_str,
     }
 
