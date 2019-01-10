@@ -46,7 +46,7 @@ class JobSet(object):
     '''
     def __init__(self, df, resource_bounds=None, float_precision=6):
         # reset the index of the dataframe
-        df = df.reset_index()
+        df = df.reset_index(drop=True)
         # set float round precision
         self.float_precision = float_precision
         self.df = np.round(df, float_precision)
