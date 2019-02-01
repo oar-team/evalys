@@ -195,7 +195,7 @@ class JobSet(object):
         nrows = 2
         if with_details:
             nrows = nrows + 2
-        fig, axe = plt.subplots(nrows=nrows, sharex=True)
+        fig, axe = plt.subplots(nrows=nrows, sharex=True, figsize=(12, 8))
         if title:
             fig.suptitle(title, fontsize=16)
         vleg.plot_load(self.utilisation, self.MaxProcs,

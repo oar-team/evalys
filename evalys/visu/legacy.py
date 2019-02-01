@@ -14,7 +14,6 @@ import random
 from . import core
 from .. import metrics
 
-matplotlib.rcParams['figure.figsize'] = (12.0, 8.0)
 
 available_series = ['bonded_slowdown', 'waiting_time', 'all']
 
