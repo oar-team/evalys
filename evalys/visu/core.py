@@ -43,8 +43,7 @@ class EvalysLayout:
     :ivar sps: The `SubplotSpec` defined in the layout.
     :vartype axes: dict
 
-    :ivar visualizations:
-        Binding of the visualizations injected into the layout.
+    :ivar visualizations: Binding of the visualizations injected into the layout.
         For each key `spskey` in `self.sps`, `self.visualizations[spskey]` is a
         list of the visualizations with root `SubplotSpec` `self.sps[spskey]`.
     :vartype visualizations: dict
@@ -75,11 +74,11 @@ class EvalysLayout:
             `Visualization` (or a subclass).  This key must exist in
             `self.sps`.
 
-        :param *args:
+        :param \*args:
             The positional arguments to be fed to the constructor of the
             visualization class.
 
-        :param **kwargs:
+        :param \**kwargs:
             The keyword arguments to be fed to the constructor of the
             visualization class.
 

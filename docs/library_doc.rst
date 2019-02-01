@@ -11,17 +11,38 @@ Workload: Handle Feitelson's SWF
    :members:
 
 
-JobSet: Handle Batsim output file
----------------------------------
+Handle Batsim output files
+--------------------------
 
 .. automodule:: evalys.jobset
+   :members:
+
+.. automodule:: evalys.pstates
+   :members:
+
+.. automodule:: evalys.mstates
    :members:
 
 
 Visualisation library
 ---------------------
 
-.. automodule:: evalys.visu
+.. automodule:: evalys.visu.gantt
+   :members:
+
+.. automodule:: evalys.visu.details
+   :members:
+
+.. automodule:: evalys.visu.lifecycle
+   :members:
+
+.. automodule:: evalys.visu.series
+   :members:
+
+.. automodule:: evalys.visu.core
+   :members:
+
+.. automodule:: evalys.visu.legacy
    :members:
 
 Metrics computation

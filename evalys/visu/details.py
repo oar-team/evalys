@@ -43,7 +43,7 @@ def plot_details(jobset, *, title='Workload overview', **kwargs):
     :param title: The title of the window.
     :type title: str
 
-    :param **kwargs:
+    :param \**kwargs:
         The keyword arguments to be fed to the constructors of the
         visualization classes.
     """

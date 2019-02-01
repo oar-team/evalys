@@ -31,8 +31,9 @@ class GanttVisualization(core.Visualization):
     :ivar xscale:
         The requested adaptation of the x-axis scale.
         Valid values are `None`, and `'time'`.
-        - It defaults to `None`, and uses raw values by default.
-        - If set to `time`, the x-axis interprets the data as timestamps, and
+
+        * It defaults to `None`, and uses raw values by default.
+        * If set to `time`, the x-axis interprets the data as timestamps, and
           uses a time-aware semantic.
 
     :ivar alpha:
@@ -198,12 +199,12 @@ def plot_gantt(jobset, *, title='Gantt chart', **kwargs):
     Helper function to create a Gantt chart of a workload.
 
     :param jobset: The jobset under study.
-    :type jobset: `JobSet`
+    :type jobset: ``JobSet``
 
     :param title: The title of the window.
-    :type title: str
+    :type title: ``str``
 
-    :param **kwargs:
+    :param \**kwargs:
         The keyword arguments to be fed to the constructor of the visualization
         class.
     """
@@ -225,7 +226,7 @@ def plot_diff_gantt(jobsets, *, title='Gantt charts comparison', **kwargs):
     :param title: The title of the window.
     :type title: str
 
-    :param **kwargs:
+    :param \**kwargs:
         The keyword arguments to be fed to the constructor of the visualization
         class.
     """

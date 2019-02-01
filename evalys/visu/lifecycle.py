@@ -54,15 +54,17 @@ class LifecycleVisualization(core.Visualization):
     :ivar xscale:
         The requested adaptation of the x-axis scale.
         Valid values are `None`, and `'time'`.
-        - It defaults to `None`, and uses raw values by default.
-        - If set to `time`, the x-axis interprets the data as timestamps, and
+
+        * It defaults to `None`, and uses raw values by default.
+        * If set to `time`, the x-axis interprets the data as timestamps, and
           uses a time-aware semantic.
 
     :ivar yscale:
         The requested adaptation of the y-axis scale.
         Valid values are `None`, and `'log2'`.
-        - It defaults to `None`, and uses raw values by default.
-        - If set to `log2`, the y-axis is transformed to show the values on a
+
+        * It defaults to `None`, and uses raw values by default.
+        * If set to `log2`, the y-axis is transformed to show the values on a
           logarithmic scale in base 2.
     """
 
@@ -203,9 +205,9 @@ def plot_lifecycle(jobset, *, title='Jobs\' life cycle', **kwargs):
     :type jobset: `JobSet`
 
     :param title: The title of the window.
-    :type title: str
+    :type title: `str`
 
-    :param **kwargs:
+    :param \**kwargs:
         The keyword arguments to be fed to the constructor of the visualization
         class.
     """
