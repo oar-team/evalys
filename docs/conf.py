@@ -37,7 +37,8 @@ sys.path.insert(0, os.path.abspath('../'))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.viewcode']
+extensions = ['sphinx.ext.autodoc',
+              'sphinx.ext.intersphinx', 'sphinx.ext.viewcode']
 autodoc_member_order = 'bysource'
 
 # Add any paths that contain templates here, relative to this directory.
@@ -196,13 +197,13 @@ htmlhelp_basename = 'evalys_doc'
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
-    #'papersize': 'letterpaper',
+    # 'papersize': 'letterpaper',
 
     # The font size ('10pt', '11pt' or '12pt').
-    #'pointsize': '10pt',
+    # 'pointsize': '10pt',
 
     # Additional stuff for the LaTeX preamble.
-    #'preamble': '',
+    # 'preamble': '',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -274,5 +275,10 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
-autodoc_mock_imports = ['numpy', 'pandas', 'matplotlib', 'matplotlib.pyplot',
-        'matplotlib.gridspec' 'matplotlib.patches', 'seaborn']
+autodoc_mock_imports = ['numpy', 'pandas', 'matplotlib',
+                        'matplotlib.pyplot',
+                        'matplotlib.gridspec',
+                        'matplotlib.patches',
+                        'matplotlib.lines',
+                        'matplotlib.dates',
+                        'seaborn']
