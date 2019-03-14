@@ -136,7 +136,7 @@ def plot_series(jobset, *, name, title='Time series plot', **kwargs):
         class.
     """
     layout = core.SimpleLayout(wtitle=title)
-    plot = layout.inject(SeriesVisualization.factory(name), spskey='all')
+    plot = layout.inject(SeriesVisualization.factory(name), spskey='all', title=title)
     utils.bulksetattr(plot, **kwargs)
     plot.build(jobset)
     layout.show()
