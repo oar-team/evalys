@@ -527,7 +527,7 @@ def plot_fragmentation(frag, ax=None, label="Fragmentation"):
 
 
 def plot_load(load, nb_resources=None, ax=None, normalize=False,
-              time_scale=False, load_label="load",
+              time_scale=False, load_label='Load',
               UnixStartTime=0, TimeZoneString='UTC'):
     '''
     Plots the number of used resources against time

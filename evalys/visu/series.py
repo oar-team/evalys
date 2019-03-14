@@ -65,8 +65,7 @@ class SeriesVisualization(core.Visualization):
             load=getattr(jobset, self._metric),
             nb_resources=jobset.MaxProcs,
             ax=self._ax,
-            time_scale=(self.xscale == 'time'),
-            load_label=self.title
+            time_scale=(self.xscale == 'time')
         )
 
 
@@ -139,4 +138,5 @@ def plot_series(jobset, *, name, title='Time series plot', **kwargs):
     plot = layout.inject(SeriesVisualization.factory(name), spskey='all', title=title)
     utils.bulksetattr(plot, **kwargs)
     plot.build(jobset)
+    plot._ax.set_title(title)
     layout.show()
