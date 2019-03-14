@@ -57,7 +57,7 @@ class SeriesVisualization(core.Visualization):
         self.title = title
         self.xscale = None
 
-    def build(self, jobset):
+    def build(self, jobset, legend_label):
         # TODO: remove dependency to legacy code
         # XXX: palette is not injected properly
         # XXX: we are missing the normalize parameter
@@ -65,7 +65,8 @@ class SeriesVisualization(core.Visualization):
             load=getattr(jobset, self._metric),
             nb_resources=jobset.MaxProcs,
             ax=self._ax,
-            time_scale=(self.xscale == 'time')
+            time_scale=(self.xscale == 'time'),
+            legend_label=legend_label
         )
 
 
@@ -117,7 +118,7 @@ class UtilizationSeriesVisualization(SeriesVisualization):
         super().__init__(lspec, title=title)
 
 
-def plot_series(jobset, *, name, title='Time series plot', **kwargs):
+def plot_series(jobset, *, name, title='Time series plot', legend_label, **kwargs):
     """
     Helper function to create a series visualization of a workload.
 
@@ -130,6 +131,9 @@ def plot_series(jobset, *, name, title='Time series plot', **kwargs):
     :param title: The title of the window.
     :type title: `str`
 
+    :param legend_label: The label for legend text.
+    :type legend_label: `str`
+
     :param \**kwargs:
         The keyword arguments to be fed to the constructor of the visualization
         class.
@@ -137,6 +141,6 @@ def plot_series(jobset, *, name, title='Time series plot', **kwargs):
     layout = core.SimpleLayout(wtitle=title)
     plot = layout.inject(SeriesVisualization.factory(name), spskey='all', title=title)
     utils.bulksetattr(plot, **kwargs)
-    plot.build(jobset)
+    plot.build(jobset, legend_label)
     plot._ax.set_title(title)
     layout.show()

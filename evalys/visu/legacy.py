@@ -527,7 +527,7 @@ def plot_fragmentation(frag, ax=None, label="Fragmentation"):
 
 
 def plot_load(load, nb_resources=None, ax=None, normalize=False,
-              time_scale=False, load_label='Load',
+              time_scale=False, legend_label='Load',
               UnixStartTime=0, TimeZoneString='UTC'):
     '''
     Plots the number of used resources against time
@@ -560,7 +560,7 @@ def plot_load(load, nb_resources=None, ax=None, normalize=False,
     ax.margins(x=0.1, y=0.1)
 
     # plot load
-    u.load.plot(drawstyle="steps-post", ax=ax, label=load_label)
+    u.load.plot(drawstyle="steps-post", ax=ax, label=legend_label)
 
     # plot a line for max available area
     if nb_resources and not normalize:
@@ -573,18 +573,16 @@ def plot_load(load, nb_resources=None, ax=None, normalize=False,
     ax.plot([u.index[0], u.index[-1]],
             [mean, mean],
             linestyle='--', linewidth=1,
-            label="Mean {0} ({1:.2f})".format(load_label, mean))
+            label="Mean {0} ({1:.2f})".format(legend_label, mean))
     sns.rugplot(u.load[u.load == 0].index, ax=ax, color='r')
     ax.scatter([], [], marker="|", linewidth=1, s=200,
-               label="Reset event ({} == 0)".format(load_label), color='r')
+               label="Reset event ({} == 0)".format(legend_label), color='r')
     # FIXME: Add legend when this bug is fixed
     # https://github.com/mwaskom/seaborn/issues/1071
 
     # ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     ax.grid(True)
     ax.legend()
-    ax.set_title(load_label)
-
 
 def plot_free_resources(utilisation, nb_resources, normalize=False,
                         time_scale=False,
