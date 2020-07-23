@@ -141,6 +141,7 @@ def plot_gantt(jobset, ax=None, title="Gantt chart",
     ax.set_ylim(jobset.res_bounds[0]-1, jobset.res_bounds[1]+2)
     ax.grid(True)
     ax.set_title(title)
+    ax.set_ylabel("Machines")
 
 
 def plot_pstates(pstates, x_horizon, ax=None, palette=None,
@@ -404,6 +405,7 @@ def plot_gantt_general_shape(jobset_list, ax=None, alpha=0.3,
     ax.set_ylim(jobset.res_bounds[0]-1, jobset.res_bounds[1]+2)
     ax.grid(True)
     ax.set_title(title)
+    ax.set_ylabel("Machines")
 
 
 def plot_job_details(dataframe, size, ax=None, title="Job details",
@@ -467,6 +469,7 @@ def plot_job_details(dataframe, size, ax=None, title="Job details",
     ax.grid(True)
     ax.legend()
     ax.set_title(title)
+    ax.set_ylabel("Job size")
     if time_scale:
         ax.xaxis.set_major_formatter(
             matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M:%S')
@@ -585,6 +588,7 @@ def plot_load(load, nb_resources=None, ax=None, normalize=False,
     # ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     ax.grid(True)
     ax.legend()
+    ax.set_ylabel("Machines")
 
 def plot_free_resources(utilisation, nb_resources, normalize=False,
                         time_scale=False,
