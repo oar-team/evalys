@@ -421,12 +421,14 @@ def plot_job_details(dataframe, size, ax=None, title="Job details",
     df['starting_time'] = df['submission_time'] + df['waiting_time']
     df['finish_time'] = df['starting_time'] + df['execution_time']
 
-    to_plot = [('starting_time', 'green', '>', size),
-               ('submission_time', 'blue', '.', 0),
-               ('finish_time', 'red', '|', size * 2)]
+    threshold = size * 1.05 # To separate the 3 "zones"
 
-    lines = [['submission_time', 'starting_time', 'blue', 0, size],
-             ['starting_time', 'finish_time', 'green', size, size * 2]]
+    to_plot = [('submission_time', 'blue', '.', 0),
+               ('starting_time', 'green', '>', threshold),
+               ('finish_time', 'red', '|', threshold*2)]
+
+    lines = [['submission_time', 'starting_time', 'blue', 0, threshold],
+             ['starting_time', 'finish_time', 'green', threshold, threshold*2]]
 
     if time_scale:
         # interpret columns with time aware semantics

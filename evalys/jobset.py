@@ -110,7 +110,8 @@ class JobSet(object):
         'allocated_resources': ProcSet.from_str,
     }
 
-    columns = ['jobID',
+    columns = ['job_id',
+               'workload_name',
                'submission_time',
                'requested_number_of_resources',
                'requested_time',
@@ -199,10 +200,10 @@ class JobSet(object):
         if title:
             fig.suptitle(title, fontsize=16)
         vleg.plot_load(self.utilisation, self.MaxProcs,
-                       load_label="utilisation", ax=axe[0],
+                       legend_label="utilisation", ax=axe[0],
                        normalize=normalize, time_scale=time_scale)
         vleg.plot_load(self.queue, self.MaxProcs,
-                       load_label="queue", ax=axe[1], normalize=normalize,
+                       legend_label="queue", ax=axe[1], normalize=normalize,
                        time_scale=time_scale)
         if with_details:
             vleg.plot_job_details(self.df, self.MaxProcs, ax=axe[2],
@@ -267,7 +268,7 @@ class JobSet(object):
         free_interval_serie = pd.DataFrame(columns=event_columns)
         free_interval_serie.loc[0] = first_row
         for index, row in event_df.iterrows():
-            current_itv = free_interval_serie.ix[index]['free_itvs']
+            current_itv = free_interval_serie.iloc[index]['free_itvs']
             if row.grab:
                 new_itv = current_itv - row.free_itvs
             else:
