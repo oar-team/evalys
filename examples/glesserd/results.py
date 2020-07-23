@@ -14,7 +14,7 @@ import glob, os, sys
 
 
 
-def utilization(df, measure='requested_number_of_processors', measure_name="util", queue=False):
+def utilization(df, measure='requested_number_of_resources', measure_name="util", queue=False):
     
     if queue:
         begin_col = "submission_time"

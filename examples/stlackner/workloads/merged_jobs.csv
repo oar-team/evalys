@@ -1,4 +1,4 @@
-job_id,hacky_job_id,workload_name,submission_time,requested_number_of_processors,requested_time,success,starting_time,execution_time,finish_time,waiting_time,turnaround_time,stretch,consumed_energy,allocated_processors
+job_id,hacky_job_id,workload_name,submission_time,requested_number_of_resources,requested_time,success,starting_time,execution_time,finish_time,waiting_time,turnaround_time,stretch,consumed_energy,allocated_resources
 0,0,a84f80,0.000000,4,300.000000,1,0.000870,96.002685,96.003555,0.000870,96.003555,1.000009,-1.000000,
 1,10,a84f80,0.000000,8,300.000000,1,0.003330,96.007473,96.010803,0.003330,96.010803,1.000035,-1.000000,
 2,20,a84f80,0.000000,16,300.000000,1,0.003360,96.007548,96.010908,0.003360,96.010908,1.000035,-1.000000,

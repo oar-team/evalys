@@ -1,4 +1,4 @@
-jobID,submission_time,requested_number_of_processors,requested_time,success,starting_time,execution_time,finish_time,waiting_time,turnaround_time,stretch,consumed_energy,allocated_processors
+jobID,submission_time,requested_number_of_resources,requested_time,success,starting_time,execution_time,finish_time,waiting_time,turnaround_time,stretch,consumed_energy,allocated_resources
 34,1497548328.0,16,200.0,1,1497548330.0,118.0,1497548448.0,2.0,120.0,1.0169491525423728,-1,54 63 95 53 93 58 62 57 60 96 59 94 56 55 61 64
 48,1497549011.0,16,200.0,1,1497549082.0,117.0,1497549199.0,71.0,188.0,1.606837606837607,-1,123 58 59 60 118 108 124 122 120 105 106 121 107 57 119 117
 211,1497555243.0,4,200.0,1,1497555244.0,139.0,1497555383.0,1.0,140.0,1.0071942446043165,-1,63 61 62 64
