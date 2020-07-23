@@ -11,10 +11,10 @@ from evalys.metrics import compute_load, load_mean, fragmentation_reis, fragment
 
 class JobSet(object):
     '''
-    A JobSet is a set of jobs with it state, its time properties and
-    the resources it is associated with.
+    A JobSet is a set of jobs with their state, their time properties and
+    the resources they are associated to.
 
-    It takes a dataframe in input that are intended to have the columns
+    It takes a dataframe as input that is intended to have the columns
     defined in :py::`JobSet.columns`.
 
     The `allocated_resources` one should contain the string representation

@@ -56,7 +56,8 @@ You can find a lot of examples in the `./examples` directory.
 Gallery
 -------
 
-.. image:: _static/jobset_plot.png
-.. image:: _static/gantt_comparison.svg
-.. image:: _static/gantt_off_mstates.svg
+.. image:: ./docs/_static/out_jobs_example.png
+.. image:: ./docs/_static/jobset_plot.png
+.. image:: ./docs/_static/gantt_comparison.svg
+.. image:: ./docs/_static/gantt_off_mstates.svg
 
