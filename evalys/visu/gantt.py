@@ -11,6 +11,11 @@ from . import core
 from .. import utils
 
 
+def NOLABEL(_):
+    """Labeler strategy disabling the labeling of jobs."""
+    return ''
+
+
 class GanttVisualization(core.Visualization):
     """
     Visualization of a jobset as a Gantt chart.
@@ -51,7 +56,7 @@ class GanttVisualization(core.Visualization):
     :ivar labeler:
         The strategy to label jobs.  By default, the `jobID` column is used to
         label jobs.
-        To disable the labeling of jobs, simply return an empty string.
+        To disable the labeling of jobs, use :func:`~gantt.NOLABEL`.
     """
 
     COLUMNS = ('jobID', 'allocated_resources', 'execution_time',
@@ -153,7 +158,7 @@ class DiffGanttVisualization(GanttVisualization):
         super().__init__(lspec, title=title)
         self.alpha = 0.5
         self.colorer = lambda _, palette: palette[0]  # single color per jobset
-        self.labeler = lambda _: ''  # do not label jobs
+        self.labeler = NOLABEL  # do not label jobs
         self.palette = None  # let .build(…) figure the number of colors
 
     def build(self, jobsets):
