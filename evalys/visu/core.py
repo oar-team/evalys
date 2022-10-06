@@ -99,7 +99,7 @@ class EvalysLayout:
 
     @wtitle.setter
     def wtitle(self, wtitle):
-        self.fig.canvas.set_window_title(wtitle)
+        self.fig.canvas.setWindowTitle(wtitle)
 
 
 class SimpleLayout(EvalysLayout):
