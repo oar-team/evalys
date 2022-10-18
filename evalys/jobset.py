@@ -144,6 +144,20 @@ class JobSet(object):
             df.to_csv(f, index=False, sep=",",
                       float_format='%.{}f'.format(self.float_precision))
 
+    def to_df(self):
+        """ Export this jobset to a dataframe
+        
+        Example:
+        >>> from evalys.jobset import JobSet
+        >>> js = JobSet.from_csv("./examples/jobs.csv")
+        >>> df = js.to_df()
+        >>> print(df)
+        
+        """
+        df = self.df.copy()
+        df.allocated_resources = df.allocated_resources.apply(str)
+        return df
+
     def gantt(self, time_scale=False, **kwargs):
         if time_scale:
             kwargs['xscale'] = 'time'
