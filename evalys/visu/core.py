@@ -95,11 +95,11 @@ class EvalysLayout:
         """
         The title of the window containing the layout.
         """
-        return self.fig.canvas.get_window_title()
+        return self.fig.canvas.manager.get_window_title()
 
     @wtitle.setter
     def wtitle(self, wtitle):
-        self.fig.canvas.setWindowTitle(wtitle)
+        self.fig.canvas.manager.set_window_title(wtitle)
 
 
 class SimpleLayout(EvalysLayout):

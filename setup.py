@@ -20,7 +20,7 @@ changelog = read('CHANGES.rst').replace('.. :changelog:', '')
 
 requirements = [
     "pandas>=0.19",
-    "matplotlib>=2.0",
+    "matplotlib>=3.6.0,<4",
     "seaborn>=0.7",
     "procset>=0.1.dev1",
 ]
