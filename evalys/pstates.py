@@ -44,7 +44,7 @@ class PowerStatesChanges(object):
 
         finish_df = pd.DataFrame(index=[0], columns=['time', 'machine_id', 'new_pstate'])
         finish_df.iloc[0] = [float('inf'), all_machines_str, 42]
-        df = df.append(finish_df)
+        df = pd.concat([df, finish_df])
 
         # Let's traverse the dataframe to create rectangles
         after_init = df.loc[df['time'] > 0]
