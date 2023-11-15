@@ -65,8 +65,7 @@ def compute_load(dataframe, col_begin, col_end, col_cumsum,
     stop_event_df.columns = event_columns
 
     # merge events and sort them
-    event_df = start_event_df.append(
-        stop_event_df,
+    event_df = pd.concat([start_event_df, stop_event_df],
         ignore_index=True).sort_values(by='time').reset_index(drop=True)
 
     # sum the event that happend at the same time and cummulate events

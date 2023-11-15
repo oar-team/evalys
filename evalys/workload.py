@@ -368,21 +368,23 @@ class Workload(object):
             time_periods = np.arange(min(norm_util.index),
                                      max(norm_util.index),
                                      60 * 60 * period_in_hours)
-        mean_df = pd.DataFrame()
+        mean_data = {
+            'begin': [],
+            'end': [],
+            'mean_util': [],
+        }
         for index, val in enumerate(time_periods):
             if index == len(time_periods) - 1 or index == 0:
                 continue
+
             begin = val
             end = val + period_in_hours * (60 * 60)
 
-            mean_df = mean_df.append(
-                {"begin": begin,
-                 "end": end,
-                 "mean_util": load_mean(norm_util,
-                                        begin=begin,
-                                        end=end)},
-                ignore_index=True)
+            mean_data['begin'].append(begin)
+            mean_data['end'].append(end)
+            mean_data['mean_util'].append(load_mean(norm_util, begin=begin, end=end))
 
+        mean_df = pd.DataFrame(data=mean_data)
         mean_df["norm_mean_util"] = mean_df.mean_util / self.MaxProcs
         periods = mean_df.loc[
             lambda x: x.norm_mean_util >= (utilisation - variation)].loc[
