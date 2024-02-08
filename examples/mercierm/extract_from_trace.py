@@ -17,9 +17,15 @@ def extract_periods(w, swf_trace):
 
     results_dir = "./results"
     variation = 0.1
-    columns = ["file", "begin", "end", "norm_util", "variation",
-               "period_in_hours"]
-    metadata_map = pd.DataFrame(columns=columns)
+
+    metadata = {
+        'file': [],
+        'begin': [],
+        'end': [],
+        'norm_util': [],
+        'variation': [],
+        'period_in_hours': [],
+    }
 
     os.makedirs(results_dir, exist_ok=True)
     for period in [60]:
@@ -38,14 +44,14 @@ def extract_periods(w, swf_trace):
                 filepath = results_dir + "/" + filename + ".swf"
                 results.to_csv(filepath)
                 # Add metadata
-                metadata_map = metadata_map.append(
-                    [{"file": filename,
-                      "begin": results.ExtractBegin,
-                      "end": results.ExtractEnd,
-                      "norm_util": util / 10,
-                      "variation": variation,
-                      "period_in_hours": period}])
-    metadata_map.to_csv(results_dir + "/extract_metadata.csv", index=False)
+                metadata['file'].append(filename)
+                metadata['begin'].append(results.ExtractBegin)
+                metadata['end'].append(results.ExtractEnd)
+                metadata['norm_util'].append(util / 10)
+                metadata['variation'].append(variation)
+                metadata['period_in_hours'].append(period)
+
+    pd.DataFrame(data=metadata).to_csv(results_dir + "/extract_metadata.csv", index=False)
 
 
 if __name__ == "__main__":

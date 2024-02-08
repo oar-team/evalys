@@ -31,7 +31,7 @@ def utilization(df, measure='requested_number_of_resources', measure_name="util"
     endu.columns = ['time', measure_name]
 
 
-    u = startu.append(endu)
+    u = pd.concat([startu, endu])
 
 
     u = u.groupby(['time']).sum()
